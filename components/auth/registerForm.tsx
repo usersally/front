@@ -136,7 +136,7 @@ export default function RegisterForm() {
                    /* Role toggle */
                     .role-toggle { display: flex;
                      background: rgba(255,255,255,0.1); 
-                    border-radius: 3px;
+                    border-radius: 12px;
                      padding: 3px;
                      gap: 4px;
                      border: 1.5px solid rgba(255,255,255,0.2); } 
@@ -230,7 +230,7 @@ export default function RegisterForm() {
         <div className="blob blob-3" />
 
         <div className="auth-card">
-          <h1 className="auth-title">Create Account</h1>
+          <h1 className="auth-title">Create account</h1>
 
           <form
             onSubmit={(e) => {
@@ -270,7 +270,7 @@ export default function RegisterForm() {
             <form.Field name="firstName">
               {(field) => (
                 <div className="auth-field">
-                  <label>First Name</label>
+                  <label className="text-white/85">First Name</label>
                   <input
                     className="auth-input"
                     value={field.state.value}
@@ -284,8 +284,8 @@ export default function RegisterForm() {
             {/* LAST NAME */}
             <form.Field name="lastName">
               {(field) => (
-                <div className="auth-field">
-                  <label>Last Name</label>
+                <div className="auth-field ">
+                  <label className="text-white/85">Last Name</label>
                   <input
                     className="auth-input"
                     value={field.state.value}
@@ -300,7 +300,7 @@ export default function RegisterForm() {
             <form.Field name="email">
               {(field) => (
                 <div className="auth-field">
-                  <label>Email</label>
+                  <label className="text-white/85">Email</label>
                   <input
                     className="auth-input"
                     type="email"
@@ -316,7 +316,7 @@ export default function RegisterForm() {
             <form.Field name="phoneNumber">
               {(field) => (
                 <div className="auth-field">
-                  <label>Phone Number</label>
+                  <label className="text-white/85">Phone Number</label>
                   <input
                     className="auth-input"
                     value={field.state.value}
@@ -331,7 +331,7 @@ export default function RegisterForm() {
             <form.Field name="password">
               {(field) => (
                 <div className="auth-field">
-                  <label>Password</label>
+                  <label className="text-white/85">Password</label>
                   <input
                     type="password"
                     className="auth-input"
@@ -347,7 +347,7 @@ export default function RegisterForm() {
             <form.Field name="confirmPassword">
               {(field) => (
                 <div className="auth-field">
-                  <label>Confirm Password</label>
+                  <label className="text-white/85">Confirm Password</label>
                   <input
                     type="password"
                     className="auth-input"
@@ -366,7 +366,7 @@ export default function RegisterForm() {
               {(roleField) =>
                 roleField.state.value === "teacher" ? (
                   <div className="auth-field">
-                    <label>CV / Resume</label>
+                    <label className="text-white/85">CV / Resume</label>
 
                     <label htmlFor="cv-input" className="file-upload-label">
                       {cvFile ? "File selected ✓" : "Upload CV"}
@@ -392,9 +392,9 @@ export default function RegisterForm() {
             </button>
           </form>
 
-          <p className="signin-link">
+          <div className="signin-link">
             Already have an account? <a href="/auth/login">Sign In</a>
-          </p>
+            </div>
         </div>
       </div>
     </>
