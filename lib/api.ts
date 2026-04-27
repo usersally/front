@@ -1,6 +1,6 @@
 // the place for all calls to node.js and backend
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 //successeful auth request from backend
 export interface AuthResponse {
