@@ -6,7 +6,7 @@ import { useForm } from "@tanstack/react-form";
 export default function RegisterForm() {
   const router = useRouter();
 
-  // ✅ Initialize form with ALL fields (including cvFile + error)
+  // ✅ Initialize form with ALL fields
   const form = useForm({
     defaultValues: {
       firstName: "",
@@ -68,8 +68,8 @@ export default function RegisterForm() {
 
   return (
     <>
-    <style>
-  {`
+      <style>
+        {`
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 .auth-root {
@@ -315,9 +315,8 @@ export default function RegisterForm() {
   text-decoration: underline;
 }
 `}
-</style>;
-
-
+      </style>
+      ;
       <div className="auth-root">
         {/* 🎨 Background effects */}
         <div className="auth-bg" />
@@ -364,24 +363,26 @@ export default function RegisterForm() {
             </div>
 
             {/* ================= INPUTS ================= */}
-            {(["firstName", "lastName", "email", "phoneNumber"] as const).map((name) => (
-              <form.Field key={name} name={name}>
-                {(field) => (
-                  <div className="auth-field">
-                    <label className="text-white/85">
-                      {name.replace(/([A-Z])/g, " $1")}
-                    </label>
-                    <input
-                      className="auth-input"
-                      type={name === "email" ? "email" : "text"}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder={`Enter ${name}`}
-                    />
-                  </div>
-                )}
-              </form.Field>
-            ))}
+            {(["firstName", "lastName", "email", "phoneNumber"] as const).map(
+              (name) => (
+                <form.Field key={name} name={name}>
+                  {(field) => (
+                    <div className="auth-field">
+                      <label className="text-white/85">
+                        {name.replace(/([A-Z])/g, " $1")}
+                      </label>
+                      <input
+                        className="auth-input"
+                        type={name === "email" ? "email" : "text"}
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder={`Enter ${name}`}
+                      />
+                    </div>
+                  )}
+                </form.Field>
+              ),
+            )}
 
             {/* ================= PASSWORD ================= */}
             <form.Field name="password">
