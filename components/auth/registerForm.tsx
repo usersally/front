@@ -1,15 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
 
 export default function RegisterForm() {
   const router = useRouter();
 
-  const [cvFile, setCvFile] = useState<File | null>(null);
-  const [error, setError] = useState("");
-
+  // ✅ Initialize form with ALL fields (including cvFile + error)
   const form = useForm({
     defaultValues: {
       firstName: "",
@@ -19,21 +16,25 @@ export default function RegisterForm() {
       password: "",
       confirmPassword: "",
       role: "student",
+      cvFile: null as File | null,
+      error: "",
     },
 
-    onSubmit: async ({ value }) => {
+    // ✅ Submit handler
+    onSubmit: async ({ value, formApi }) => {
       try {
-        // ✅ validation
+        // 🔒 Password validation
         if (value.password !== value.confirmPassword) {
-          setError("Passwords do not match");
+          formApi.setFieldValue("error", "Passwords do not match");
           return;
         }
 
-        setError("");
+        formApi.setFieldValue("error", "");
 
+        // 📄 Handle CV (only for teacher)
         let cvPath = "";
-        if (value.role === "teacher" && cvFile) {
-          cvPath = cvFile.name;
+        if (value.role === "teacher" && value.cvFile) {
+          cvPath = value.cvFile.name; // later replace with real upload
         }
 
         const payload = {
@@ -50,29 +51,25 @@ export default function RegisterForm() {
           },
         );
 
-        console.log(res);
         const data = await res.json();
-        console.log(data);
+
         if (!res.ok) {
-          setError(data.message || "Registration failed");
+          formApi.setFieldValue("error", data.message || "Registration failed");
           return;
         }
 
-        if (data.role === "teacher") {
-          router.push("/teacher");
-        } else {
-          router.push("/student");
-        }
-      } catch (err) {
-        setError("Something went wrong");
+        // 🚀 Redirect based on role
+        router.push(data.role === "teacher" ? "/teacher" : "/student");
+      } catch {
+        formApi.setFieldValue("error", "Something went wrong");
       }
     },
   });
 
   return (
     <>
-      <style>
-        {`
+    <style>
+  {`
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 
 .auth-root {
@@ -318,9 +315,11 @@ export default function RegisterForm() {
   text-decoration: underline;
 }
 `}
-      </style>
+</style>;
+
 
       <div className="auth-root">
+        {/* 🎨 Background effects */}
         <div className="auth-bg" />
         <div className="blob blob-1" />
         <div className="blob blob-2" />
@@ -329,14 +328,15 @@ export default function RegisterForm() {
         <div className="auth-card">
           <h1 className="auth-title">Create account</h1>
 
+          {/* 🧠 Main Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              form.handleSubmit();
+              form.handleSubmit(); // ✅ trigger TanStack submit
             }}
-            style={{ display: "contents" }}
+            style={{ display: "contents" }} // keeps your layout intact
           >
-            {/* ROLE */}
+            {/* ================= ROLE ================= */}
             <div className="auth-field">
               <label className="auth-label">I am a</label>
 
@@ -363,68 +363,27 @@ export default function RegisterForm() {
               </form.Field>
             </div>
 
-            {/* FIRST NAME */}
-            <form.Field name="firstName">
-              {(field) => (
-                <div className="auth-field">
-                  <label className="text-white/85">First Name</label>
-                  <input
-                    className="auth-input"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="First name"
-                  />
-                </div>
-              )}
-            </form.Field>
+            {/* ================= INPUTS ================= */}
+            {(["firstName", "lastName", "email", "phoneNumber"] as const).map((name) => (
+              <form.Field key={name} name={name}>
+                {(field) => (
+                  <div className="auth-field">
+                    <label className="text-white/85">
+                      {name.replace(/([A-Z])/g, " $1")}
+                    </label>
+                    <input
+                      className="auth-input"
+                      type={name === "email" ? "email" : "text"}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder={`Enter ${name}`}
+                    />
+                  </div>
+                )}
+              </form.Field>
+            ))}
 
-            {/* LAST NAME */}
-            <form.Field name="lastName">
-              {(field) => (
-                <div className="auth-field ">
-                  <label className="text-white/85">Last Name</label>
-                  <input
-                    className="auth-input"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="last name"
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            {/* EMAIL */}
-            <form.Field name="email">
-              {(field) => (
-                <div className="auth-field">
-                  <label className="text-white/85">Email</label>
-                  <input
-                    className="auth-input"
-                    type="email"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="Enter a valid email"
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            {/* PHONE */}
-            <form.Field name="phoneNumber">
-              {(field) => (
-                <div className="auth-field">
-                  <label className="text-white/85">Phone Number</label>
-                  <input
-                    className="auth-input"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="Enter a valid phone number"
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            {/* PASSWORD */}
+            {/* ================= PASSWORD ================= */}
             <form.Field name="password">
               {(field) => (
                 <div className="auth-field">
@@ -440,7 +399,7 @@ export default function RegisterForm() {
               )}
             </form.Field>
 
-            {/* CONFIRM PASSWORD */}
+            {/* ================= CONFIRM PASSWORD ================= */}
             <form.Field name="confirmPassword">
               {(field) => (
                 <div className="auth-field">
@@ -452,43 +411,72 @@ export default function RegisterForm() {
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Repeat password"
                   />
-
-                  {error && <p className="error-text">{error}</p>}
                 </div>
               )}
             </form.Field>
 
-            {/* CV */}
-            <form.Field name="role">
-              {(roleField) =>
-                roleField.state.value === "teacher" ? (
-                  <div className="auth-field">
-                    <label className="text-white/85">CV / Resume</label>
+            {/* ❗ GLOBAL ERROR (from form state) */}
+            <form.Subscribe selector={(state) => state.values.error}>
+              {(error) =>
+                error ? <p className="error-text">{error}</p> : null
+              }
+            </form.Subscribe>
 
-                    <label htmlFor="cv-input" className="file-upload-label">
-                      {cvFile ? "File selected ✓" : "Upload CV"}
-                    </label>
+            {/* ================= CV (ONLY FOR TEACHER) ================= */}
+            <form.Subscribe selector={(state) => state.values.role}>
+              {(role) =>
+                role === "teacher" ? (
+                  <form.Field name="cvFile">
+                    {(cvField) => (
+                      <div className="auth-field">
+                        <label className="text-white/85">CV / Resume</label>
 
-                    <input
-                      id="cv-input"
-                      type="file"
-                      style={{ display: "none" }}
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
-                    />
+                        {/* custom upload button */}
+                        <label htmlFor="cv-input" className="file-upload-label">
+                          {cvField.state.value
+                            ? "File selected ✓"
+                            : "Upload CV"}
+                        </label>
 
-                    {cvFile && <p className="file-name-hint">{cvFile.name}</p>}
-                  </div>
+                        {/* hidden file input */}
+                        <input
+                          id="cv-input"
+                          type="file"
+                          hidden
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) =>
+                            cvField.handleChange(e.target.files?.[0] ?? null)
+                          }
+                        />
+
+                        {/* show selected file */}
+                        {cvField.state.value && (
+                          <p className="file-name-hint">
+                            {cvField.state.value.name}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </form.Field>
                 ) : null
               }
-            </form.Field>
+            </form.Subscribe>
 
-            {/* SUBMIT */}
-            <button type="submit" className="auth-submit">
-              Create account →
-            </button>
+            {/* ================= SUBMIT ================= */}
+            <form.Subscribe selector={(state) => state.values}>
+              {(values) => (
+                <button
+                  type="submit"
+                  className="auth-submit"
+                  disabled={values.role === "teacher" && !values.cvFile}
+                >
+                  Create account →
+                </button>
+              )}
+            </form.Subscribe>
           </form>
 
+          {/* 🔗 LOGIN LINK */}
           <div className="signin-link">
             Already have an account? <a href="/auth/login">Sign In</a>
           </div>
