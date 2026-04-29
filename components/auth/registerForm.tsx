@@ -318,7 +318,7 @@ export default function RegisterForm() {
       </style>
       ;
       <div className="auth-root">
-        {/* 🎨 Background effects */}
+        {/*  Background effects */}
         <div className="auth-bg" />
         <div className="blob blob-1" />
         <div className="blob blob-2" />
@@ -327,15 +327,15 @@ export default function RegisterForm() {
         <div className="auth-card">
           <h1 className="auth-title">Create account</h1>
 
-          {/* 🧠 Main Form */}
+          {/*  Main Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              form.handleSubmit(); // ✅ trigger TanStack submit
+              form.handleSubmit(); 
             }}
-            style={{ display: "contents" }} // keeps your layout intact
+            style={{ display: "contents" }} 
           >
-            {/* ================= ROLE ================= */}
+            {/*  ROLE  */}
             <div className="auth-field">
               <label className="auth-label">I am a</label>
 
@@ -362,7 +362,7 @@ export default function RegisterForm() {
               </form.Field>
             </div>
 
-            {/* ================= INPUTS ================= */}
+            {/*  INPUTS  */}
             {(["firstName", "lastName", "email", "phoneNumber"] as const).map(
               (name) => (
                 <form.Field key={name} name={name}>
@@ -384,7 +384,7 @@ export default function RegisterForm() {
               ),
             )}
 
-            {/* ================= PASSWORD ================= */}
+            {/*  PASSWORD*/}
             <form.Field name="password">
               {(field) => (
                 <div className="auth-field">
@@ -400,7 +400,7 @@ export default function RegisterForm() {
               )}
             </form.Field>
 
-            {/* ================= CONFIRM PASSWORD ================= */}
+            {/* CONFIRM PASSWORD */}
             <form.Field name="confirmPassword">
               {(field) => (
                 <div className="auth-field">
@@ -416,14 +416,14 @@ export default function RegisterForm() {
               )}
             </form.Field>
 
-            {/* ❗ GLOBAL ERROR (from form state) */}
+            {/*  GLOBAL ERROR (from form state) */}
             <form.Subscribe selector={(state) => state.values.error}>
               {(error) =>
                 error ? <p className="error-text">{error}</p> : null
               }
             </form.Subscribe>
 
-            {/* ================= CV (ONLY FOR TEACHER) ================= */}
+            {/*  CV (ONLY FOR TEACHER) */}
             <form.Subscribe selector={(state) => state.values.role}>
               {(role) =>
                 role === "teacher" ? (
@@ -463,7 +463,7 @@ export default function RegisterForm() {
               }
             </form.Subscribe>
 
-            {/* ================= SUBMIT ================= */}
+            {/*  SUBMIT */}
             <form.Subscribe selector={(state) => state.values}>
               {(values) => (
                 <button
@@ -477,7 +477,7 @@ export default function RegisterForm() {
             </form.Subscribe>
           </form>
 
-          {/* 🔗 LOGIN LINK */}
+          {/*  LOGIN LINK */}
           <div className="signin-link">
             Already have an account? <a href="/auth/login">Sign In</a>
           </div>
