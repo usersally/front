@@ -324,6 +324,28 @@ export default function RegisterForm() {
         <div className="blob blob-2" />
         <div className="blob blob-3" />
 
+        {/* return button */}
+        <button
+          onClick={() => router.back()}
+          style={{
+            position: "fixed",
+            top: 20,
+            left: 20,
+            zIndex: 11,
+            background: "rgba(255,255,255,0.2)",
+            border: "none",
+            borderRadius: "50%",
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          ←
+        </button>
+
         <div className="auth-card">
           <h1 className="auth-title">Create account</h1>
 
@@ -331,9 +353,9 @@ export default function RegisterForm() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              form.handleSubmit(); 
+              form.handleSubmit();
             }}
-            style={{ display: "contents" }} 
+            style={{ display: "contents" }}
           >
             {/*  ROLE  */}
             <div className="auth-field">

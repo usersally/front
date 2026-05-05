@@ -13,110 +13,77 @@ export default function HeroCards() {
   };
 
   return (
-    <section className="w-full bg-[#F6FAFD]">
-      {/* FULL WIDTH GRID */}
-      <div className="grid md:grid-cols-2 gap-4 w-full ">
-        {/* CARD 1 */}
-        <div className="relative h-[50vh] md:h-[70vh] overflow-hidden group rounded-2xl mt-2 shadow-xl">
-          <Image
-            src="/card3.jpg"
-            alt="Book course"
-            fill
-            className="object-cover group-hover:scale-105 transition duration-500"
-            priority
-          />
+    <section className="w-full h-screen relative overflow-hidden">
+      {/* BACKGROUND IMAGE */}
+      <Image
+        src="/card3.jpg"
+        alt="Book course"
+        fill
+        priority
+        className="object-cover"
+      />
 
-          <div className="absolute inset-0 bg-linear-to-t from-[#1F3745]/80 via-[#1F3745]/40 to-transparent"></div>
+      {/* DARK OVERLAY */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#1F3745]/80 via-[#1F3745]/50 to-[#1F3745]/30" />
 
-          <div className="absolute bottom-0 p-8 text-white z-10 max-w-lg">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">
-              Book Your Course Now
-            </h2>
-            <p className="mb-4 opacity-90">
-              Stay updated with top teachers, announcements, and your learning
-              journey.
-            </p>
+      {/* CONTENT */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6 z-10">
+        {/* TITLE */}
+        <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight max-w-2xl">
+          Book Your Course Now
+        </h1>
 
-            <Link
-              href="/auth/login"
-              className="inline-block px-6 py-2 rounded-lg bg-[#547C90] hover:bg-[#265166] transition font-medium shadow-md"
-            >
-              Book Now
-            </Link>
-          </div>
-        </div>
+        {/* SUBTEXT */}
+        <p className="text-sm md:text-lg opacity-90 mb-6 max-w-xl">
+          Stay updated with top teachers, announcements, and your learning
+          journey.
+        </p>
 
-        {/* CARD 2 */}
-        <div className="relative h-[50vh] md:h-[70vh] overflow-hidden group rounded-2xl mt-2 shadow-2xl">
-          <Image
-            src="/card2.jpg"
-            alt="Best teachers"
-            fill
-            className="object-cover group-hover:scale-105 transition duration-500"
-          />
+        {/* CTA BUTTON */}
+        <Link
+          href="/auth/login"
+          className="px-8 py-3 rounded-lg bg-[#547C90] hover:bg-[#265166] transition font-medium shadow-lg text-lg mb-10"
+        >
+          Book Now
+        </Link>
 
-          <div className="absolute inset-0 bg-linear-to-t from-[#265166]/80 via-[#265166]/40 to-transparent"></div>
+        {/* ================= SEARCH SECTION ================= */}
+        <div className="w-full flex justify-center px-4">
+          <div className="w-full max-w-4xl">
+            {/* SEARCH BAR (glass effect) */}
+            <div className="flex items-center backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl px-4 py-4 h-12 md:py-5 shadow-lg ">
+              {/* ICON */}
+              <span className="text-white text-lg mr-3">🔍</span>
 
-          <div className="absolute bottom-0 p-8 text-white z-10 max-w-lg">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">
-              Explore Top Rated Teachers
-            </h2>
-            <p className="mb-4 opacity-90">
-              Discover the best educators and choose the perfect teacher for
-              you.
-            </p>
+              {/* INPUT */}
+              <input
+                type="text"
+                placeholder="Search subject, teacher, grade or location..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-white text-base md:text-lg placeholder:text-white/70 "
+              />
 
-            <Link
-              href="/teachers"
-              className="inline-block px-6 py-2 rounded-lg bg-[#BACEDA] text-[#1F3745] hover:bg-white transition font-medium shadow-md"
-            >
-              Explore
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* SEARCH SECTION */}
-      <div className="w-full flex justify-center mt-12 px-4">
-        <div className="w-full max-w-5xl">
-          {/* TITLE */}
-          <h2 className="text-center text-2xl md:text-3xl font-semibold text-[#1F3745] mb-6">
-            Find your perfect teacher
-          </h2>
-
-          {/* SEARCH BAR */}
-          <div className="flex items-center bg-transparent border border-[#BACEDA] rounded-xl px-4 py-4 md:py-5 shadow-sm focus-within:shadow-md transition">
-            {/* ICON */}
-            <span className="text-[#547C90] text-lg mr-3">🔍</span>
-
-            {/* INPUT */}
-            <input
-              type="text"
-              placeholder="Search subject, teacher, grade or location..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-[#1F3745] text-base md:text-lg placeholder:text-[#547C90]/70"
-            />
-
-            {/* BUTTON */}
-            <button
-              onClick={handleSearch}
-              className="ml-3 px-5 py-2 rounded-lg bg-[#265166] text-white hover:bg-[#1F3745] transition cursor-pointer"
-            >
-              Search
-            </button>
-          </div>
-
-          {/* TAGS (like Coursera) */}
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            {["Math", "Physics", "Primary", "Alger"].map((tag) => (
-              <span
-                key={tag}
-                className="px-4 py-1.5 rounded-full border border-[#BACEDA] text-[#547C90] text-sm cursor-pointer hover:bg-[#547C90] hover:text-white transition"
+              {/* BUTTON */}
+              <button
+                onClick={handleSearch}
+                className="ml-3 px-6 py-2 rounded-lg bg-[#547C90] text-white hover:bg-[#265166] transition cursor-pointer"
               >
-                {tag}
-              </span>
-            ))}
+                Search
+              </button>
+            </div>
+
+            {/* TAGS */}
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              {["Math", "Physics", "Primary", "Alger"].map((tag) => (
+                <span
+                  key={tag}
+                  className="px-4 py-1.5 rounded-full border border-white/30 text-white text-sm cursor-pointer hover:bg-white hover:text-[#1F3745] transition"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>

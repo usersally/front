@@ -104,8 +104,8 @@ export default function Navbar() {
             )}
           </li>
           <li>
-            <Link href="#teachers" className="hover:text-[#547C90] transition">
-              Best Rated Teachers
+            <Link href="#about" className="hover:text-[#547C90] transition">
+              Why CourSally
             </Link>
           </li>
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
+import axios from "axios";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -19,33 +20,26 @@ export default function LoginForm() {
       setError("");
 
       try {
-        const res = await fetch(
+        const res = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+          value,
           {
-            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(value),
           },
         );
 
-        const result = await res.json();
+        const result = res.data;
         console.log("LOGIN RESPONSE:", result);
-        if (!res.ok) {
-          setError(result.message || "Login failed");
-          return;
-        }
 
         // ✅ Save token
         const token = result?.data?.token;
         const role = result?.data?.user?.role;
-        console.log("ROLE", role);
 
         localStorage.setItem("token", token);
 
         // ✅ Redirect based on role
-
         if (role === "student") {
           router.push("/student");
         } else if (role === "teacher") {
@@ -53,13 +47,16 @@ export default function LoginForm() {
         } else {
           setError("Invalid user role");
         }
-        console.log("FULL RESULT:", result);
-        console.log("USER:", result?.data?.user);
-        console.log("ROLE:", result?.data?.user?.role);
       } catch (err: unknown) {
         console.log("LOGIN ERROR:", err);
 
-        setError(err instanceof Error ? err.message : "Something went wrong");
+        if (axios.isAxiosError(err)) {
+          setError(err.response?.data?.message || "Login failed");
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Something went wrong");
+        }
       }
     },
   });
@@ -221,13 +218,34 @@ export default function LoginForm() {
   text-decoration: underline;
 }
 `}</style>
-
+      ;
       <div className="auth-root">
-        {/* Background */}
         <div className="auth-bg"></div>
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>
         <div className="blob blob-3"></div>
+
+        {/* Return button */}
+        <button
+          onClick={() => router.back()}
+          style={{
+            position: "fixed",
+            top: 20,
+            left: 20,
+            zIndex: 11,
+            background: "rgba(255,255,255,0.2)",
+            border: "none",
+            borderRadius: "50%",
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          ←
+        </button>
 
         {/* Card */}
         <div className="auth-card">
