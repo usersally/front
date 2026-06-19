@@ -42,6 +42,7 @@ export default function StudentSidebar() {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser(getUser());
   }, []);
 

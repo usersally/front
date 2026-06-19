@@ -55,6 +55,7 @@ export default function StudentNavbar() {
 
   // ── Close dropdown on outside click ──
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser(getUser());
     function handleClickOutside(e: MouseEvent) {
       if (
