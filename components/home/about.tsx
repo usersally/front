@@ -27,7 +27,10 @@ export default function About() {
   ];
 
   return (
-    <section className="relative w-full py-24 bg-[#F6FAFD] overflow-hidden">
+    <section
+      className="relative w-full py-24 bg-[#F6FAFD] overflow-hidden"
+      id="about"
+    >
       {/* CURVED BACKGROUND */}
       <div className="absolute top-4 left-0 w-full h-full bg-[#c5d8e3] rounded-t-[36%] z-0"></div>
       <div className="relative z-10 max-w-7xl mx-auto px-6">

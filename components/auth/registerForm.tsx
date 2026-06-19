@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
+import { registerUser, saveToken, saveUser } from "@/lib/api";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function RegisterForm() {
     // ✅ Submit handler
     onSubmit: async ({ value, formApi }) => {
       try {
-        // 🔒 Password validation
+        // 🔒 Password validation (keep this in UI layer)
         if (value.password !== value.confirmPassword) {
           formApi.setFieldValue("error", "Passwords do not match");
           return;
@@ -31,37 +32,49 @@ export default function RegisterForm() {
 
         formApi.setFieldValue("error", "");
 
-        // 📄 Handle CV (only for teacher)
+        // 📄 Handle CV (temporary logic)
+        // TODO: a real implementation needs multipart/form-data (FormData)
+        // and a multer-style upload endpoint on the backend — sending the
+        // File object as JSON won't work.
         let cvPath = "";
         if (value.role === "teacher" && value.cvFile) {
-          cvPath = value.cvFile.name; // later replace with real upload
+          cvPath = value.cvFile.name; // later replace with real upload system
         }
 
+        // 🧾 Build payload
+        // Capitalize role to match Mongoose discriminator keys ("Student" / "Teacher")
+        const capitalizedRole =
+          value.role === "teacher" ? "teacher" : "student";
+
         const payload = {
-          ...value,
+          firstName: value.firstName,
+          lastName: value.lastName,
+          email: value.email,
+          phoneNumber: value.phoneNumber,
+          password: value.password,
+          role: capitalizedRole,
           ...(value.role === "teacher" && { CV: cvPath }),
         };
 
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          },
-        );
+        // 🚀 API CALL
+        console.log("[register] sending payload:", payload); // ← verify role here in DevTools
+        const result = await registerUser(payload);
 
-        const data = await res.json();
+        // 🔐 Save token + user
+        saveToken(result.data.token);
+        saveUser(result.data.user);
 
-        if (!res.ok) {
-          formApi.setFieldValue("error", data.message || "Registration failed");
-          return;
+        // 🚀 Redirect based on role returned by backend
+        // Backend stores "teacher" / "student" (discriminator keys)
+        const role = result.data.user.role ?? capitalizedRole;
+        console.log("[register] role from backend:", role);
+        router.push(role === "teacher" ? "/teacher" : "/student");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          formApi.setFieldValue("error", err.message);
+        } else {
+          formApi.setFieldValue("error", "Something went wrong");
         }
-
-        // 🚀 Redirect based on role
-        router.push(data.role === "teacher" ? "/teacher" : "/student");
-      } catch {
-        formApi.setFieldValue("error", "Something went wrong");
       }
     },
   });
@@ -316,7 +329,7 @@ export default function RegisterForm() {
 }
 `}
       </style>
-      ;
+
       <div className="auth-root">
         {/*  Background effects */}
         <div className="auth-bg" />
@@ -390,7 +403,7 @@ export default function RegisterForm() {
                 <form.Field key={name} name={name}>
                   {(field) => (
                     <div className="auth-field">
-                      <label className="text-white/85">
+                      <label className="auth-label">
                         {name.replace(/([A-Z])/g, " $1")}
                       </label>
                       <input
@@ -410,7 +423,7 @@ export default function RegisterForm() {
             <form.Field name="password">
               {(field) => (
                 <div className="auth-field">
-                  <label className="text-white/85">Password</label>
+                  <label className="auth-label">Password</label>
                   <input
                     type="password"
                     className="auth-input"
@@ -426,7 +439,7 @@ export default function RegisterForm() {
             <form.Field name="confirmPassword">
               {(field) => (
                 <div className="auth-field">
-                  <label className="text-white/85">Confirm Password</label>
+                  <label className="auth-label">Confirm Password</label>
                   <input
                     type="password"
                     className="auth-input"
@@ -441,7 +454,17 @@ export default function RegisterForm() {
             {/*  GLOBAL ERROR (from form state) */}
             <form.Subscribe selector={(state) => state.values.error}>
               {(error) =>
-                error ? <p className="error-text">{error}</p> : null
+                error ? (
+                  <p
+                    style={{
+                      color: "#f87171",
+                      fontSize: ".8rem",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    {error}
+                  </p>
+                ) : null
               }
             </form.Subscribe>
 
@@ -452,7 +475,7 @@ export default function RegisterForm() {
                   <form.Field name="cvFile">
                     {(cvField) => (
                       <div className="auth-field">
-                        <label className="text-white/85">CV / Resume</label>
+                        <label className="auth-label">CV / Resume</label>
 
                         {/* custom upload button */}
                         <label htmlFor="cv-input" className="file-upload-label">

@@ -1,14 +1,14 @@
 "use client";
 
 export default function LocationSection() {
-  // 👉 Replace with your real coordinates
+  // fake coordinates
   const latitude = 35.6981;
   const longitude = -0.6348;
 
   const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
   return (
-    <section className="w-full py-20 bg-[#F6FAFD]">
+    <section className="w-full py-20 bg-[#F6FAFD]" id="location">
       {/* CONTAINER */}
       <div className="max-w-7xl mx-auto px-6">
         {/* MAIN GRID */}

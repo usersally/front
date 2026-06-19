@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
-import axios from "axios";
+import { loginUser, saveToken, saveUser } from "@/lib/api";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -20,39 +20,32 @@ export default function LoginForm() {
       setError("");
 
       try {
-        const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-          value,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          },
-        );
+        // LOGIN REQUEST
+        const result = await loginUser(value.email, value.password);
 
-        const result = res.data;
-        console.log("LOGIN RESPONSE:", result);
+        // SAVE TOKEN
+        saveToken(result.data.token);
 
-        // ✅ Save token
-        const token = result?.data?.token;
-        const role = result?.data?.user?.role;
+        // SAVE USER
+        saveUser(result.data.user);
 
-        localStorage.setItem("token", token);
+        // GET ROLE
+        const role = result.data.user.role;
 
-        // ✅ Redirect based on role
+        // REDIRECT
         if (role === "student") {
           router.push("/student");
         } else if (role === "teacher") {
           router.push("/teacher");
+        } else if (role === "admin") {
+          router.push("/admin");
         } else {
           setError("Invalid user role");
         }
       } catch (err: unknown) {
-        console.log("LOGIN ERROR:", err);
+        console.error(err);
 
-        if (axios.isAxiosError(err)) {
-          setError(err.response?.data?.message || "Login failed");
-        } else if (err instanceof Error) {
+        if (err instanceof Error) {
           setError(err.message);
         } else {
           setError("Something went wrong");
@@ -218,7 +211,7 @@ export default function LoginForm() {
   text-decoration: underline;
 }
 `}</style>
-      ;
+
       <div className="auth-root">
         <div className="auth-bg"></div>
         <div className="blob blob-1"></div>
@@ -313,7 +306,7 @@ export default function LoginForm() {
           </form>
 
           <div className="signup-link text-white/85">
-            Don’t have an account? <a href="/auth/register">Sign up</a>
+            Do not have an account? <a href="/auth/register">Sign up</a>
           </div>
         </div>
       </div>
