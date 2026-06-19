@@ -43,7 +43,7 @@ export default function RegisterForm() {
 
         // 🧾 Build payload
         // Capitalize role to match Mongoose discriminator keys ("Student" / "Teacher")
-        const capitalizedRole =
+        const capitalizedRole: "student" | "teacher" =
           value.role === "teacher" ? "teacher" : "student";
 
         const payload = {
@@ -57,7 +57,7 @@ export default function RegisterForm() {
         };
 
         // 🚀 API CALL
-        console.log("[register] sending payload:", payload); // ← verify role here in DevTools
+        console.log("[register] sending payload:", payload);
         const result = await registerUser(payload);
 
         // 🔐 Save token + user
