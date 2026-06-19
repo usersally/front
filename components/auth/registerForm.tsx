@@ -68,7 +68,7 @@ export default function RegisterForm() {
         // Backend stores "teacher" / "student" (discriminator keys)
         const role = result.data.user.role ?? capitalizedRole;
         console.log("[register] role from backend:", role);
-        router.push(role === "teacher" ? "/teacher" : "/student");
+        router.push(role === "teacher" ? "/teacher/pending" : "/student");
       } catch (err: unknown) {
         if (err instanceof Error) {
           formApi.setFieldValue("error", err.message);

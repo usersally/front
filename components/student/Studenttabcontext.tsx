@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 export type StudentTab =
   | "dashboard"
@@ -8,6 +9,14 @@ export type StudentTab =
   | "bookings"
   | "profile"
   | "findTeacher";
+
+const VALID_TABS: StudentTab[] = [
+  "dashboard",
+  "courses",
+  "bookings",
+  "profile",
+  "findTeacher",
+];
 
 interface TabContextValue {
   activeTab: StudentTab;
@@ -24,7 +33,25 @@ export function StudentTabProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [activeTab, setActiveTab] = useState<StudentTab>("dashboard");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const tabFromUrl = searchParams.get("tab") as StudentTab | null;
+  const activeTab =
+    tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : "dashboard";
+
+  const setActiveTab = useCallback(
+    (tab: StudentTab) => {
+      if (pathname === "/student") {
+        router.replace(`/student?tab=${tab}`, { scroll: false });
+      } else {
+        router.push(`/student?tab=${tab}`);
+      }
+    },
+    [pathname, router],
+  );
+
   return (
     <TabContext.Provider value={{ activeTab, setActiveTab }}>
       {children}

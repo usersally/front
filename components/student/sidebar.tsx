@@ -4,7 +4,9 @@
 
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useStudentTab, StudentTab } from "./Studenttabcontext";
+import { getUser, logout, type AuthUser } from "@/lib/api";
 
 const links: { label: string; icon: string; tab: StudentTab }[] = [
   {
@@ -37,9 +39,14 @@ const links: { label: string; icon: string; tab: StudentTab }[] = [
 export default function StudentSidebar() {
   const router = useRouter();
   const { activeTab, setActiveTab } = useStudentTab();
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    logout();
     router.push("/auth/login");
   };
 
@@ -54,8 +61,10 @@ export default function StudentSidebar() {
             alt="profile"
             className="w-20 h-20 rounded-full border-2 border-white object-cover"
           />
-          <h3 className="mt-4 font-semibold text-lg">Student Name</h3>
-          <p className="text-sm opacity-70">email@mail.com</p>
+          <h3 className="mt-4 font-semibold text-lg">
+            {user ? `${user.firstName} ${user.lastName}` : "Student"}
+          </h3>
+          <p className="text-sm opacity-70">{user?.email ?? ""}</p>
         </div>
 
         {/* LINKS */}

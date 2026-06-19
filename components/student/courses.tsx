@@ -35,7 +35,7 @@ function BookingModal({
     setError("");
     setLoading(true);
     try {
-      await api.post("/bookings", {
+      await api.post("/booking", {
         courseId: course._id,
         teacherId: course.teacher._id,
         date,
@@ -1230,7 +1230,7 @@ export default function CoursesPage() {
 
   useEffect(() => {
     api
-      .get<{ success: boolean; data: Course[] }>("/course")
+      .get<{ success: boolean; data: Course[] }>("/courses")
       .then((res) => setCourses(res.data.data))
       .catch(() => setError("Failed to load courses. Please try again."))
       .finally(() => setLoading(false));

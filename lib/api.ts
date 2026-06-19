@@ -40,6 +40,7 @@ export interface AuthResponse {
       role: "student" | "teacher" | "admin";
       firstName: string;
       lastName: string;
+      cvStatus?: "pending" | "approved" | "rejected";
     };
   };
 }
@@ -79,6 +80,9 @@ export interface AdminUser {
   phoneNumber?: string;
   role: "student" | "teacher" | "admin";
   createdAt?: string;
+  cv?: string;
+  cvStatus?: "pending" | "approved" | "rejected";
+  /** @deprecated use cv */
   CV?: string;
 }
 
@@ -185,6 +189,18 @@ export async function getAllCourses(): Promise<AdminCourse[]> {
 // DELETE /admin/courses/:id
 export async function deleteCourse(courseId: string): Promise<void> {
   await api.delete(`/admin/courses/${courseId}`);
+}
+
+// PATCH /admin/teachers/:id/cv-status
+export async function updateTeacherCvStatus(
+  teacherId: string,
+  status: "approved" | "rejected",
+): Promise<AdminUser> {
+  const { data } = await api.patch<{ success: boolean; data: AdminUser }>(
+    `/admin/teachers/${teacherId}/cv-status`,
+    { status },
+  );
+  return data.data;
 }
 
 // ─────────────────────────────────────────────

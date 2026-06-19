@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 
 import StudentNavbar from "../../components/student/navbar";
@@ -12,7 +13,7 @@ function useAuthGuard() {
   if (typeof window !== "undefined") {
     const raw = localStorage.getItem("user");
     if (!raw) {
-      router.push("/login");
+      router.push("/auth/login");
       return false;
     }
     const user = JSON.parse(raw);
@@ -25,11 +26,7 @@ function useAuthGuard() {
   return true;
 }
 
-export default function StudentLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function StudentShell({ children }: { children: React.ReactNode }) {
   const authorized = useAuthGuard();
 
   if (!authorized) return null;
@@ -44,5 +41,17 @@ export default function StudentLayout({
         </div>
       </div>
     </StudentTabProvider>
+  );
+}
+
+export default function StudentLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={null}>
+      <StudentShell>{children}</StudentShell>
+    </Suspense>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
-import { AdminUser, deleteUser, getErrorMessage, getUsers } from "@/lib/api";
+import { AdminUser, deleteUser, getErrorMessage, getUsers, updateTeacherCvStatus } from "@/lib/api";
 
 // ─────────────────────────────────────────────
 //  HELPERS
@@ -10,7 +10,7 @@ import { AdminUser, deleteUser, getErrorMessage, getUsers } from "@/lib/api";
 function RowSkeleton() {
   return (
     <tr>
-      <td colSpan={4} className="px-4 py-3">
+      <td colSpan={5} className="px-4 py-3">
         <div className="animate-pulse h-10 rounded-xl bg-[#D4E8F0] dark:bg-white/5" />
       </td>
     </tr>
@@ -30,6 +30,46 @@ export default function AdminTeachersPage() {
   const [toDelete, setToDelete] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const cvUrl = (t: AdminUser) => t.cv ?? t.CV;
+
+  const statusBadge = (status?: string) => {
+    const cfg = {
+      pending: "bg-amber-50 text-amber-700",
+      approved: "bg-emerald-50 text-emerald-700",
+      rejected: "bg-red-50 text-red-600",
+    } as const;
+    const s = status ?? "pending";
+    return (
+      <span
+        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${cfg[s as keyof typeof cfg] ?? cfg.pending}`}
+      >
+        {s}
+      </span>
+    );
+  };
+
+  async function handleCvStatus(
+    teacherId: string,
+    status: "approved" | "rejected",
+  ) {
+    setActionLoading(`${teacherId}-${status}`);
+    setActionError(null);
+    try {
+      const updated = await updateTeacherCvStatus(teacherId, status);
+      setTeachers((prev) =>
+        prev.map((t) => (t._id === teacherId ? { ...t, ...updated } : t)),
+      );
+      if (selected?._id === teacherId) {
+        setSelected({ ...selected, ...updated });
+      }
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    } finally {
+      setActionLoading(null);
+    }
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability
@@ -131,6 +171,9 @@ export default function AdminTeachersPage() {
                   Email
                 </th>
                 <th className="px-4 py-3 font-semibold text-[#547C90] dark:text-[#8AAFC0]">
+                  Status
+                </th>
+                <th className="px-4 py-3 font-semibold text-[#547C90] dark:text-[#8AAFC0]">
                   CV
                 </th>
                 <th className="px-4 py-3 font-semibold text-[#547C90] dark:text-[#8AAFC0] text-right">
@@ -143,7 +186,7 @@ export default function AdminTeachersPage() {
                 [...Array(5)].map((_, i) => <RowSkeleton key={i} />)
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center">
+                  <td colSpan={5} className="px-4 py-12 text-center">
                     <Icon
                       icon="mdi:account-tie-outline"
                       width={36}
@@ -169,9 +212,12 @@ export default function AdminTeachersPage() {
                       {t.email}
                     </td>
                     <td className="px-4 py-3">
-                      {t.CV ? (
+                      {statusBadge(t.cvStatus)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {cvUrl(t) ? (
                         <a
-                          href={t.CV}
+                          href={cvUrl(t)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-[#2F556B] dark:text-[#8AAFC0] hover:underline text-xs font-medium"
@@ -184,6 +230,26 @@ export default function AdminTeachersPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {(t.cvStatus ?? "pending") === "pending" && (
+                        <>
+                          <button
+                            onClick={() => handleCvStatus(t._id, "approved")}
+                            disabled={actionLoading === `${t._id}-approved`}
+                            className="inline-flex items-center gap-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors mr-1 cursor-pointer disabled:opacity-50"
+                          >
+                            <Icon icon="mdi:check-circle-outline" width="16" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleCvStatus(t._id, "rejected")}
+                            disabled={actionLoading === `${t._id}-rejected`}
+                            className="inline-flex items-center gap-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors mr-1 cursor-pointer disabled:opacity-50"
+                          >
+                            <Icon icon="mdi:close-circle-outline" width="16" />
+                            Reject
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={() => setSelected(t)}
                         className="inline-flex items-center gap-1.5 text-[#2F556B] dark:text-[#8AAFC0] hover:text-[#1F3745] dark:hover:text-white text-xs font-semibold hover:bg-[#EBF3F8] dark:hover:bg-white/5 px-3 py-1.5 rounded-lg transition-colors mr-1 cursor-pointer"
@@ -264,11 +330,15 @@ export default function AdminTeachersPage() {
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
+                <dt className="text-[#547C90] dark:text-[#8AAFC0]">CV Status</dt>
+                <dd>{statusBadge(selected.cvStatus)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
                 <dt className="text-[#547C90] dark:text-[#8AAFC0]">CV</dt>
                 <dd className="text-right">
-                  {selected.CV ? (
+                  {cvUrl(selected) ? (
                     <a
-                      href={selected.CV}
+                      href={cvUrl(selected)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[#2F556B] dark:text-[#8AAFC0] hover:underline font-medium"
@@ -283,6 +353,24 @@ export default function AdminTeachersPage() {
                   )}
                 </dd>
               </div>
+              {(selected.cvStatus ?? "pending") === "pending" && (
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => handleCvStatus(selected._id, "approved")}
+                    disabled={actionLoading === `${selected._id}-approved`}
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white py-2 text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleCvStatus(selected._id, "rejected")}
+                    disabled={actionLoading === `${selected._id}-rejected`}
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-red-500 text-white py-2 text-sm font-semibold hover:bg-red-600 disabled:opacity-50 cursor-pointer"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
               <div className="flex justify-between gap-4">
                 <dt className="text-[#547C90] dark:text-[#8AAFC0]">User ID</dt>
                 <dd className="text-[#1F3745] dark:text-white font-mono text-xs break-all text-right">

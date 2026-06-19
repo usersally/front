@@ -38,7 +38,7 @@ export default function Footer() {
             <h3 className="font-semibold mb-3">Explore</h3>
             <ul className="space-y-2 text-sm text-[#BACEDA]">
               <li>
-                <Link href="/teachers">Find Teachers</Link>
+                <Link href="/student">Find Teachers</Link>
               </li>
               <li>
                 <Link href="#">Subjects</Link>

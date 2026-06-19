@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { api, getErrorMessage } from "@/lib/api";
+import { useStudentTab } from "./Studenttabcontext";
 
 // ─────────────────────────────────────────────
 //  TYPES  (matches student.ts + user.ts + enrollment.ts)
@@ -256,14 +258,16 @@ function AvatarUpload({
     if (!file) return;
     try {
       setUploading(true);
-      const formData = new FormData();
-      formData.append("avatar", file);
-      const { data: res } = await api.patch<{ data: { avatar: string } }>(
-        "/student/me/avatar",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } },
-      );
-      onUploaded(res.data.avatar);
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const { data: res } = await api.patch<ProfileResponse>("/student/me", {
+        avatar: dataUrl,
+      });
+      onUploaded(res.data.avatar ?? dataUrl);
     } catch {
       // silent
     } finally {
@@ -382,12 +386,119 @@ function EnrollmentCard({ enr }: { enr: Enrollment }) {
           {enr.teacher?.pricePerHour?.toLocaleString()}
           <span className="text-xs font-normal text-gray-400"> DA/hr</span>
         </p>
-        <a
+        <Link
           href={`/student/teachers/${enr.teacher?._id}`}
           className="mt-1 text-xs text-[#2F556B] hover:underline"
         >
           View →
-        </a>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+//  CHANGE PASSWORD MODAL
+// ─────────────────────────────────────────────
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleSave = async () => {
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    try {
+      setSaving(true);
+      setError(null);
+      await api.patch("/student/me/password", { currentPassword, newPassword });
+      setSuccess(true);
+      setTimeout(onClose, 1500);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 bg-[#2F556B]">
+          <h3 className="font-bold text-white text-lg">Change Password</h3>
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white transition"
+          >
+            <Icon icon="mdi:close" width={22} />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+              <Icon icon="mdi:alert-circle-outline" width={16} />
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-600">
+              <Icon icon="mdi:check-circle-outline" width={16} />
+              Password updated successfully
+            </div>
+          )}
+          {[
+            {
+              label: "Current Password",
+              value: currentPassword,
+              set: setCurrentPassword,
+            },
+            { label: "New Password", value: newPassword, set: setNewPassword },
+            {
+              label: "Confirm New Password",
+              value: confirmPassword,
+              set: setConfirmPassword,
+            },
+          ].map((f) => (
+            <div key={f.label}>
+              <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
+                {f.label}
+              </label>
+              <input
+                type="password"
+                value={f.value}
+                onChange={(e) => f.set(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-[#2F556B] focus:ring-2 focus:ring-[#2F556B]/10 transition"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-3 px-6 pb-6">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || success}
+            className="flex-1 rounded-xl bg-[#2F556B] py-2.5 text-sm font-semibold text-white hover:bg-[#1F3745] transition disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {saving && (
+              <Icon icon="mdi:loading" width={16} className="animate-spin" />
+            )}
+            Update Password
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -397,9 +508,11 @@ function EnrollmentCard({ enr }: { enr: Enrollment }) {
 //  PAGE
 // ─────────────────────────────────────────────
 export default function StudentProfilePage() {
+  const { setActiveTab: setStudentTab } = useStudentTab();
   const { profile, setProfile, loading, error } = useProfile();
   const { enrollments, loading: enrollLoading } = useEnrollments();
   const [showEdit, setShowEdit] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAvatarUploaded = (url: string) => {
     if (profile) setProfile({ ...profile, avatar: url });
@@ -579,13 +692,14 @@ export default function StudentProfilePage() {
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-[#1F3745] text-lg">My Enrollments</h3>
-          <a
-            href="/student/find"
+          <button
+            type="button"
+            onClick={() => setStudentTab("findTeacher")}
             className="flex items-center gap-1 rounded-xl bg-[#2F556B] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1F3745] transition"
           >
             <Icon icon="mdi:plus" width={14} />
             Enroll
-          </a>
+          </button>
         </div>
 
         {enrollLoading ? (
@@ -649,19 +763,24 @@ export default function StudentProfilePage() {
       {/* CHANGE PASSWORD */}
       <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
         <h3 className="font-bold text-[#1F3745] text-lg mb-4">Security</h3>
-        <a
-          href="/student/settings/password"
-          className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 hover:bg-[#EBF3F8] hover:border-[#2F556B] transition group"
+        <button
+          type="button"
+          onClick={() => setShowPassword(true)}
+          className="flex w-full items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 hover:bg-[#EBF3F8] hover:border-[#2F556B] transition group"
         >
           <Icon
             icon="mdi:lock-outline"
             width={18}
             className="text-[#547C90] group-hover:text-[#2F556B]"
           />
-          <span className="flex-1">Change Password</span>
+          <span className="flex-1 text-left">Change Password</span>
           <Icon icon="mdi:chevron-right" width={18} className="text-gray-400" />
-        </a>
+        </button>
       </div>
+
+      {showPassword && (
+        <ChangePasswordModal onClose={() => setShowPassword(false)} />
+      )}
 
       {/* EDIT MODAL */}
       {showEdit && (

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { api, getErrorMessage } from "@/lib/api";
+import { useStudentTab } from "./Studenttabcontext";
 
 // ─────────────────────────────────────────────
 //  TYPES  (matches booking.ts model)
@@ -52,7 +53,7 @@ function useBookings(filter: BookingStatus | "all") {
         setError(null);
         const params = filter !== "all" ? `?status=${filter}` : "";
         const { data: res } = await api.get<BookingsResponse>(
-          `/student/bookings${params}`,
+          `/booking${params}`,
         );
         setBookings(res.data);
       } catch (err) {
@@ -368,6 +369,7 @@ const TABS: { label: string; value: FilterTab }[] = [
 ];
 
 export default function MyBookingsPage() {
+  const { setActiveTab: setStudentTab } = useStudentTab();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const { bookings, loading, error } = useBookings(activeTab);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -376,7 +378,7 @@ export default function MyBookingsPage() {
     if (!confirm("Are you sure you want to cancel this booking?")) return;
     try {
       setCancellingId(id);
-      await api.patch(`/bookings/${id}/cancel`);
+      await api.patch(`/booking/${id}/cancel`);
       // Reload would happen via the hook re-fetch; for now show alert
       window.location.reload();
     } catch (err) {
@@ -448,13 +450,14 @@ export default function MyBookingsPage() {
               ? "You haven't booked any sessions yet."
               : `No ${activeTab} bookings.`}
           </p>
-          <a
-            href="/student/find"
+          <button
+            type="button"
+            onClick={() => setStudentTab("findTeacher")}
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#2F556B] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1F3745] transition"
           >
             <Icon icon="mdi:magnify" width={16} />
             Find a Teacher
-          </a>
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">

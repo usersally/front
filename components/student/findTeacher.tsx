@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { api, getErrorMessage } from "@/lib/api";
+import BookSessionModal from "./bookSessionModal";
 
 // ─────────────────────────────────────────────
 //  TYPES  (matches teacher.ts model)
@@ -12,15 +14,15 @@ interface Teacher {
   firstName: string;
   lastName: string;
   avatar?: string;
-  bio: string;
-  subject: string[];
-  levels: string[];
-  pricePerHour: number;
-  pricePerMonth: number;
-  availability: { day: string; startTime: string; endTime: string }[];
+  bio?: string;
+  subject?: string[];
+  levels?: string[];
+  pricePerHour?: number;
+  pricePerMonth?: number;
+  availability?: { day: string; startTime: string; endTime: string }[];
   avgRating?: number;
   totalRatings?: number;
-  inSchool: boolean;
+  inSchool?: boolean;
 }
 
 interface TeachersResponse {
@@ -53,7 +55,7 @@ function useTeachers(query: {
       if (query.maxPrice) params.set("maxPrice", query.maxPrice);
 
       const { data: res } = await api.get<TeachersResponse>(
-        `/teachers?${params.toString()}`,
+        `/teacher?${params.toString()}`,
       );
       setTeachers(res.data);
     } catch (err) {
@@ -64,6 +66,7 @@ function useTeachers(query: {
   }, [query.search, query.subject, query.level, query.maxPrice]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetch();
   }, [fetch]);
 
@@ -131,6 +134,10 @@ function AvailabilityBadge({
 }
 
 function TeacherCard({ teacher }: { teacher: Teacher }) {
+  const subjects = teacher.subject ?? [];
+  const levels = teacher.levels ?? [];
+  const [showBooking, setShowBooking] = useState(false);
+
   return (
     <div className="group rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
       {/* Top strip */}
@@ -168,7 +175,7 @@ function TeacherCard({ teacher }: { teacher: Teacher }) {
               total={teacher.totalRatings}
             />
             <div className="mt-1 flex flex-wrap gap-1">
-              {teacher.subject.slice(0, 2).map((s, i) => (
+              {subjects.slice(0, 2).map((s, i) => (
                 <span
                   key={i}
                   className="rounded-md bg-[#2F556B]/10 px-1.5 py-0.5 text-xs font-semibold text-[#2F556B]"
@@ -181,22 +188,35 @@ function TeacherCard({ teacher }: { teacher: Teacher }) {
 
           {/* Price */}
           <div className="text-right shrink-0">
-            <p className="text-lg font-bold text-[#2F556B]">
-              {teacher.pricePerHour.toLocaleString()}
-              <span className="text-xs font-normal text-gray-400"> DA/hr</span>
-            </p>
-            <p className="text-xs text-gray-400">
-              {teacher.pricePerMonth.toLocaleString()} DA/mo
-            </p>
+            {teacher.pricePerHour != null ? (
+              <>
+                <p className="text-lg font-bold text-[#2F556B]">
+                  {teacher.pricePerHour.toLocaleString()}
+                  <span className="text-xs font-normal text-gray-400">
+                    {" "}
+                    DA/hr
+                  </span>
+                </p>
+                {teacher.pricePerMonth != null && (
+                  <p className="text-xs text-gray-400">
+                    {teacher.pricePerMonth.toLocaleString()} DA/mo
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-gray-400">Price not set</p>
+            )}
           </div>
         </div>
 
         {/* Bio */}
-        <p className="mb-4 text-sm text-gray-500 line-clamp-2">{teacher.bio}</p>
+        <p className="mb-4 text-sm text-gray-500 line-clamp-2">
+          {teacher.bio ?? "No bio provided."}
+        </p>
 
         {/* Levels */}
         <div className="mb-3 flex flex-wrap gap-1">
-          {teacher.levels.map((l, i) => (
+          {levels.map((l, i) => (
             <span
               key={i}
               className="rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-600"
@@ -207,24 +227,32 @@ function TeacherCard({ teacher }: { teacher: Teacher }) {
         </div>
 
         {/* Availability */}
-        <AvailabilityBadge slots={teacher.availability} />
+        <AvailabilityBadge slots={teacher.availability ?? []} />
 
         {/* Actions */}
         <div className="mt-4 flex gap-2">
-          <a
+          <Link
             href={`/student/teachers/${teacher._id}`}
             className="flex-1 rounded-xl border border-[#2F556B] py-2 text-center text-sm font-semibold text-[#2F556B] transition hover:bg-[#EBF3F8]"
           >
             View Profile
-          </a>
-          <a
-            href={`/student/bookings/new?teacherId=${teacher._id}`}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowBooking(true)}
             className="flex-1 rounded-xl bg-[#2F556B] py-2 text-center text-sm font-semibold text-white transition hover:bg-[#1F3745]"
           >
             Book Session
-          </a>
+          </button>
         </div>
       </div>
+
+      {showBooking && (
+        <BookSessionModal
+          teacher={teacher}
+          onClose={() => setShowBooking(false)}
+        />
+      )}
     </div>
   );
 }

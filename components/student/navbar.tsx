@@ -9,29 +9,40 @@
  */
 
 import { Icon } from "@iconify/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useStudentTab, StudentTab } from "./Studenttabcontext";
+import { getUser, logout, type AuthUser } from "@/lib/api";
 
 // ─────────────────────────────────────────────
 //  DROPDOWN ITEMS — shown when avatar is clicked
 // ─────────────────────────────────────────────
-const dropdownItems = [
+const dropdownItems: {
+  label: string;
+  icon: string;
+  tab: StudentTab;
+}[] = [
   {
     label: "My Profile",
     icon: "mdi:account-outline",
-    href: "/student/profile",
+    tab: "profile",
   },
   {
     label: "My Courses",
     icon: "mdi:book-open-outline",
-    href: "/student/courses",
+    tab: "courses",
   },
-  { label: "My List", icon: "mdi:bookmark-outline", href: "/student/list" },
+  {
+    label: "My Bookings",
+    icon: "mdi:calendar-outline",
+    tab: "bookings",
+  },
 ];
 
 export default function StudentNavbar() {
   const router = useRouter();
+  const { setActiveTab } = useStudentTab();
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   // Controls notification dot visibility
   const [hasNotif, setHasNotif] = useState(true);
@@ -44,6 +55,7 @@ export default function StudentNavbar() {
 
   // ── Close dropdown on outside click ──
   useEffect(() => {
+    setUser(getUser());
     function handleClickOutside(e: MouseEvent) {
       if (
         dropdownRef.current &&
@@ -58,8 +70,13 @@ export default function StudentNavbar() {
 
   // ── Logout: clear storage and redirect ──
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    logout();
     router.push("/auth/login");
+  };
+
+  const handleNav = (tab: StudentTab) => {
+    setActiveTab(tab);
+    setDropdownOpen(false);
   };
 
   return (
@@ -191,23 +208,24 @@ export default function StudentNavbar() {
             }}
           >
             {/* Nav links */}
-            {dropdownItems.map((item, i) => (
-              <Link
-                key={i}
-                href={item.href}
-                onClick={() => setDropdownOpen(false)} // close after navigating
+            {dropdownItems.map((item) => (
+              <button
+                key={item.tab}
+                type="button"
+                onClick={() => handleNav(item.tab)}
                 className="
-                  flex items-center gap-3
+                  w-full flex items-center gap-3
                   px-4 py-3
                   text-[#1F3745] text-sm font-medium
                   hover:bg-[#EBF3F8]
                   transition-colors duration-150
                   border-b border-gray-100
+                  cursor-pointer
                 "
               >
                 <Icon icon={item.icon} width="17" className="text-[#547C90]" />
                 {item.label}
-              </Link>
+              </button>
             ))}
 
             {/* Logout — red tint to signal destructive action */}
