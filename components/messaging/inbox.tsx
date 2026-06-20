@@ -41,83 +41,145 @@ export default function MessagesInbox({
   initialPartnerId = null,
 }: MessagesInboxProps) {
   const currentUser = getUser();
+
+  // ─────────────────────────────────────────────
+  //  STATE
+  // ─────────────────────────────────────────────
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activePartnerId, setActivePartnerId] = useState<string | null>(
     initialPartnerId,
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  // Which partner the current `messages` array belongs to — lets us derive
+  // "thread is loading" below instead of storing a separate loading flag.
+  const [messagesPartnerId, setMessagesPartnerId] = useState<string | null>(
+    null,
+  );
+
   const [draft, setDraft] = useState("");
   const [loadingList, setLoadingList] = useState(true);
-  const [loadingThread, setLoadingThread] = useState(false);
   const [sending, setSending] = useState(false);
+
+  // Cached profile for a partner with no conversation yet (e.g. clicked
+  // "Message" from a teacher profile). fetchedPartnerId tracks which
+  // partner it belongs to, so a stale fetch can't leak into the UI.
   const [fetchedPartner, setFetchedPartner] = useState<Partner | null>(null);
+  const [fetchedPartnerId, setFetchedPartnerId] = useState<string | null>(null);
+
+  const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // ─────────────────────────────────────────────
+  //  DERIVED STATE
+  // ─────────────────────────────────────────────
+  const loadingThread =
+    activePartnerId !== null && messagesPartnerId !== activePartnerId;
+
+  // ─────────────────────────────────────────────
+  //  DATA FETCHING
+  // ─────────────────────────────────────────────
   const loadConversations = useCallback(async () => {
     try {
-      setLoadingList(true);
       const { data: res } = await api.get<{
         success: boolean;
         data: Conversation[];
       }>("/messages/conversations");
       setConversations(res.data);
+      setLoadingList(false);
     } catch (err) {
       setError(getErrorMessage(err));
-    } finally {
       setLoadingList(false);
     }
   }, []);
 
-  const loadThread = useCallback(async (partnerId: string) => {
-    try {
-      setLoadingThread(true);
-      setError(null);
-      const { data: res } = await api.get<{
-        success: boolean;
-        data: ChatMessage[];
-      }>(`/messages/thread/${partnerId}`);
-      setMessages(res.data);
-      await loadConversations();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoadingThread(false);
-    }
-  }, [loadConversations]);
+  const loadThread = useCallback(
+    async (partnerId: string) => {
+      try {
+        const { data: res } = await api.get<{
+          success: boolean;
+          data: ChatMessage[];
+        }>(`/messages/thread/${partnerId}`);
+        setMessages(res.data);
+        setMessagesPartnerId(partnerId);
+        setError(null);
+        await loadConversations();
+      } catch (err) {
+        setError(getErrorMessage(err));
+      }
+    },
+    [loadConversations],
+  );
 
-  useEffect(() => {
+  // ─────────────────────────────────────────────
+  //  SYNC ACTIVE PARTNER FROM URL PROP
+  //  (adjusted during render, not in an effect, so a `?with=` change
+  //  doesn't trigger an extra cascading render)
+  // ─────────────────────────────────────────────
+  const [prevInitialPartnerId, setPrevInitialPartnerId] =
+    useState(initialPartnerId);
+  if (initialPartnerId !== prevInitialPartnerId) {
+    setPrevInitialPartnerId(initialPartnerId);
     if (initialPartnerId) setActivePartnerId(initialPartnerId);
-  }, [initialPartnerId]);
+  }
 
+  // ─────────────────────────────────────────────
+  //  EFFECTS
+  // ─────────────────────────────────────────────
+
+  // Initial conversation list load
   useEffect(() => {
-    loadConversations();
+    Promise.resolve().then(() => loadConversations());
   }, [loadConversations]);
 
+  // Load the active thread whenever the selected partner changes
   useEffect(() => {
-    if (activePartnerId) loadThread(activePartnerId);
-    else setMessages([]);
+    if (activePartnerId) {
+      Promise.resolve().then(() => loadThread(activePartnerId));
+    }
   }, [activePartnerId, loadThread]);
 
+  // Keep the thread scrolled to the latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ─────────────────────────────────────────────
+  //  PARTNER PROFILE LOOKUP (for brand-new conversations
+  //  that don't appear in `conversations` yet)
+  // ─────────────────────────────────────────────
   const activeConv = conversations.find((c) => c.partnerId === activePartnerId);
-  const activePartner = activeConv?.partner ?? fetchedPartner;
+
+  const activePartner =
+    activeConv?.partner ??
+    (fetchedPartnerId === activePartnerId ? fetchedPartner : null);
 
   useEffect(() => {
-    if (!activePartnerId || activeConv?.partner) {
-      setFetchedPartner(null);
-      return;
-    }
+    if (!activePartnerId || activeConv?.partner) return;
+
+    let ignore = false;
     api
       .get<{ success: boolean; data: Partner }>(
         `/messages/partner/${activePartnerId}`,
       )
-      .then((res) => setFetchedPartner(res.data.data))
-      .catch(() => setFetchedPartner(null));
+      .then((res) => {
+        if (ignore) return;
+        setFetchedPartner(res.data.data);
+        setFetchedPartnerId(activePartnerId);
+      })
+      .catch(() => {
+        if (ignore) return;
+        setFetchedPartner(null);
+        setFetchedPartnerId(activePartnerId);
+      });
+    return () => {
+      ignore = true;
+    };
   }, [activePartnerId, activeConv?.partner]);
 
+  // ─────────────────────────────────────────────
+  //  SEND MESSAGE
+  // ─────────────────────────────────────────────
   async function handleSend() {
     if (!activePartnerId || !draft.trim()) return;
     setSending(true);
@@ -140,11 +202,15 @@ export default function MessagesInbox({
     }
   }
 
+  // ─────────────────────────────────────────────
+  //  HELPERS
+  // ─────────────────────────────────────────────
   const initials = (p?: Partner | null) =>
-    p
-      ? `${p.firstName?.[0] ?? ""}${p.lastName?.[0] ?? ""}`.toUpperCase()
-      : "?";
+    p ? `${p.firstName?.[0] ?? ""}${p.lastName?.[0] ?? ""}`.toUpperCase() : "?";
 
+  // ─────────────────────────────────────────────
+  //  RENDER
+  // ─────────────────────────────────────────────
   return (
     <div className="p-6 min-h-screen bg-[#EBF3F8]">
       <div className="mb-6">
@@ -161,6 +227,7 @@ export default function MessagesInbox({
       )}
 
       <div className="bg-white rounded-2xl border border-[#D4E8F0] shadow-sm overflow-hidden flex h-[calc(100vh-180px)]">
+        {/* Conversation list */}
         <div className="w-72 border-r border-[#EBF3F8] flex flex-col shrink-0">
           <div className="p-4 border-b border-[#EBF3F8] text-xs font-semibold uppercase tracking-wider text-[#547C90]">
             Conversations
@@ -217,6 +284,7 @@ export default function MessagesInbox({
           </div>
         </div>
 
+        {/* Active thread */}
         <div className="flex-1 flex flex-col min-w-0">
           {activePartnerId ? (
             <>
