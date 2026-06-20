@@ -40,6 +40,7 @@ export interface AuthResponse {
       role: "student" | "teacher" | "admin";
       firstName: string;
       lastName: string;
+      avatar?: string;
       cvStatus?: "pending" | "approved" | "rejected";
     };
   };
@@ -147,8 +148,35 @@ export async function registerUser(
 
 // GET /admin/stats
 export async function getAdminStats(): Promise<AdminStats> {
-  const { data } = await api.get<{ success: boolean; data: AdminStats }>(
-    "/admin/dashboard",
+  const { data } = await api.get<{
+    success: boolean;
+    data: AdminStats & {
+      users?: number;
+      teachers?: number;
+      students?: number;
+      courses?: number;
+    };
+  }>("/admin/dashboard");
+  const raw = data.data;
+  return {
+    totalUsers: raw.totalUsers ?? raw.users ?? 0,
+    totalStudents: raw.totalStudents ?? raw.students ?? 0,
+    totalTeachers: raw.totalTeachers ?? raw.teachers ?? 0,
+    totalCourses: raw.totalCourses ?? raw.courses ?? 0,
+  };
+}
+
+export interface StudentProfile {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar?: string;
+}
+
+export async function getStudentProfile(): Promise<StudentProfile> {
+  const { data } = await api.get<{ success: boolean; data: StudentProfile }>(
+    "/student/me",
   );
   return data.data;
 }

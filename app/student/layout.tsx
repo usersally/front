@@ -33,9 +33,9 @@ function StudentShell({ children }: { children: React.ReactNode }) {
 
   return (
     <StudentTabProvider>
-      <div className="flex h-screen bg-[#F5F7FA] overflow-hidden">
+      <div className="flex min-h-screen bg-[#EBF3F8] overflow-hidden">
         <StudentSidebar />
-        <div className="flex flex-col flex-1">
+        <div className="ml-64 flex flex-col flex-1 min-h-screen min-w-0">
           <StudentNavbar />
           <main className="flex-1 overflow-y-auto p-6">{children}</main>
         </div>

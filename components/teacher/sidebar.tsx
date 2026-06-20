@@ -18,6 +18,11 @@ const NAV = [
     label: "My Courses",
   },
   {
+    href: "/teacher/explore",
+    icon: "mdi:compass-outline",
+    label: "Explore Courses",
+  },
+  {
     href: "/teacher/students",
     icon: "mdi:account-group-outline",
     label: "My Students",

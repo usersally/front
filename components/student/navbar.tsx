@@ -12,7 +12,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useStudentTab, StudentTab } from "./Studenttabcontext";
-import { getUser, logout, type AuthUser } from "@/lib/api";
+import { getUser, logout, getStudentProfile, type AuthUser } from "@/lib/api";
 
 // ─────────────────────────────────────────────
 //  DROPDOWN ITEMS — shown when avatar is clicked
@@ -43,6 +43,7 @@ export default function StudentNavbar() {
   const router = useRouter();
   const { setActiveTab } = useStudentTab();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
 
   // Controls notification dot visibility
   const [hasNotif, setHasNotif] = useState(true);
@@ -55,8 +56,20 @@ export default function StudentNavbar() {
 
   // ── Close dropdown on outside click ──
   useEffect(() => {
+    const stored = getUser();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUser(getUser());
+    setUser(stored);
+    setAvatar(stored?.avatar ?? null);
+
+    getStudentProfile()
+      .then((profile) => setAvatar(profile.avatar ?? null))
+      .catch(() => {});
+
+    function handleAvatarUpdate(e: Event) {
+      const url = (e as CustomEvent<string>).detail;
+      if (url) setAvatar(url);
+    }
+
     function handleClickOutside(e: MouseEvent) {
       if (
         dropdownRef.current &&
@@ -66,7 +79,11 @@ export default function StudentNavbar() {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("student-avatar-updated", handleAvatarUpdate);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("student-avatar-updated", handleAvatarUpdate);
+    };
   }, []);
 
   // ── Logout: clear storage and redirect ──
@@ -79,6 +96,10 @@ export default function StudentNavbar() {
     setActiveTab(tab);
     setDropdownOpen(false);
   };
+
+  const initials = user
+    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase()
+    : "S";
 
   return (
     <header
@@ -93,8 +114,8 @@ export default function StudentNavbar() {
       "
     >
       {/* ── LEFT — Brand logo ── */}
-      <h1 className="text-2xl font-extrabold tracking-tight text-[#1F3745] select-none">
-        Cour<span className="text-[#547C90]">S</span>ally
+      <h1 className="text-xl font-extrabold tracking-tight text-[#1F3745] select-none">
+        Cour<span className="text-[#7ABFA8]">Sally</span>
       </h1>
 
       {/* ── RIGHT — Search · Bell · Avatar ── */}
@@ -158,10 +179,11 @@ export default function StudentNavbar() {
             aria-label="Open profile menu"
             aria-expanded={dropdownOpen}
           >
-            <img
-              src="/avatar.png"
-              alt="profile"
-              className="
+            {avatar ? (
+              <img
+                src={avatar}
+                alt="profile"
+                className="
                 w-9 h-9 rounded-full
                 border-2 border-[#547C90]
                 shadow-[0_0_0_3px_rgba(84,124,144,0.15)]
@@ -169,7 +191,22 @@ export default function StudentNavbar() {
                 group-hover:scale-105
                 transition-transform duration-200
               "
-            />
+              />
+            ) : (
+              <div
+                className="
+                w-9 h-9 rounded-full
+                border-2 border-[#547C90]
+                shadow-[0_0_0_3px_rgba(84,124,144,0.15)]
+                bg-[#EBF3F8] text-[#2F556B]
+                flex items-center justify-center text-xs font-bold
+                group-hover:scale-105
+                transition-transform duration-200
+              "
+              >
+                {initials}
+              </div>
+            )}
 
             {/* Chevron badge — rotates when dropdown is open */}
             <span

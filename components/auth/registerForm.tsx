@@ -32,13 +32,15 @@ export default function RegisterForm() {
 
         formApi.setFieldValue("error", "");
 
-        // 📄 Handle CV (temporary logic)
-        // TODO: a real implementation needs multipart/form-data (FormData)
-        // and a multer-style upload endpoint on the backend — sending the
-        // File object as JSON won't work.
-        let cvPath = "";
+        // 📄 Upload CV as base64 data URL (same approach as student avatars)
+        let cvData = "";
         if (value.role === "teacher" && value.cvFile) {
-          cvPath = value.cvFile.name; // later replace with real upload system
+          cvData = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(value.cvFile!);
+          });
         }
 
         // 🧾 Build payload
@@ -53,7 +55,7 @@ export default function RegisterForm() {
           phoneNumber: value.phoneNumber,
           password: value.password,
           role: capitalizedRole,
-          ...(value.role === "teacher" && { CV: cvPath }),
+          ...(value.role === "teacher" && cvData && { cv: cvData }),
         };
 
         // 🚀 API CALL

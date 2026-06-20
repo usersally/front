@@ -36,6 +36,11 @@ const links: { label: string; icon: string; href: string }[] = [
     icon: "mdi:book-open-variant",
     href: "/admin/courses",
   },
+  {
+    label: "Reports",
+    icon: "mdi:flag-outline",
+    href: "/admin/reports",
+  },
 ];
 
 export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
@@ -62,24 +67,22 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         className={`
           fixed lg:static inset-y-0 left-0 z-50
           w-64 h-screen lg:h-auto shrink-0
-          bg-[#2F556B] dark:bg-[#16242C] text-white
-          flex flex-col justify-between p-5
+          bg-[#1F3745] dark:bg-[#16242C] text-white
+          flex flex-col
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0
         `}
       >
-        {/* TOP */}
-        <div>
-          {/* BRAND */}
-          <div className="flex items-center justify-between mb-10 px-1">
+        <div className="px-6 py-5 border-b border-white/10">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight select-none">
-                Cour<span className="text-[#7ABFA8]">S</span>ally
-              </h1>
-              <span className="block text-[10px] font-semibold tracking-[0.2em] text-white/50 mt-0.5">
-                ADMIN PANEL
+              <span className="text-xl font-extrabold tracking-tight">
+                Cour<span className="text-[#7ABFA8]">Sally</span>
               </span>
+              <p className="text-[10px] text-white/40 mt-0.5 uppercase tracking-widest">
+                Admin Panel
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -89,37 +92,52 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               <Icon icon="mdi:close" width="20" />
             </button>
           </div>
-
-          {/* LINKS */}
-          <nav className="space-y-2">
-            {links.map((link) => {
-              const isActive = pathname?.startsWith(link.href);
-
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={onClose}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300
-                    ${isActive ? "bg-white text-[#2F556B]" : "hover:bg-[#3E6B82] text-white"}
-                  `}
-                >
-                  <Icon icon={link.icon} width="22" />
-                  <span className="font-medium">{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
         </div>
 
-        {/* LOGOUT */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 p-3 rounded-xl hover:bg-red-500 transition cursor-pointer"
-        >
-          <Icon icon="mdi:logout" width="22" />
-          Logout
-        </button>
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {links.map((link) => {
+            const isActive = pathname?.startsWith(link.href);
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onClose}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl
+                  text-sm font-medium transition-all duration-200
+                  ${
+                    isActive
+                      ? "bg-[#2F556B] text-white shadow-inner"
+                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                  }
+                `}
+              >
+                <Icon icon={link.icon} width={19} />
+                {link.label}
+                {isActive && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#7ABFA8]" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="px-3 py-4 border-t border-white/10">
+          <button
+            onClick={handleLogout}
+            className="
+              w-full flex items-center gap-3
+              px-3 py-2.5 rounded-xl
+              text-sm font-medium text-white/60
+              hover:bg-red-500/10 hover:text-red-400
+              transition-all duration-200 cursor-pointer
+            "
+          >
+            <Icon icon="mdi:logout" width={19} />
+            Logout
+          </button>
+        </div>
       </aside>
     </>
   );

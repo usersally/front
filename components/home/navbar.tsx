@@ -10,10 +10,8 @@ type NavbarProps = {
 
 export default function Navbar({ setSelectedLevel }: NavbarProps) {
   const levelsDropdownRef = useRef<HTMLLIElement | null>(null);
-  const subjectsDropdownRef = useRef<HTMLLIElement | null>(null);
 
   const [openLevels, setOpenLevels] = useState(false);
-  const [openSubjects, setOpenSubjects] = useState(false);
 
   const grades = [
     {
@@ -46,14 +44,6 @@ export default function Navbar({ setSelectedLevel }: NavbarProps) {
         !levelsDropdownRef.current.contains(event.target as Node)
       ) {
         setOpenLevels(false);
-      }
-
-      // CLOSE SUBJECTS DROPDOWN
-      if (
-        subjectsDropdownRef.current &&
-        !subjectsDropdownRef.current.contains(event.target as Node)
-      ) {
-        setOpenSubjects(false);
       }
     };
 
@@ -122,50 +112,6 @@ export default function Navbar({ setSelectedLevel }: NavbarProps) {
             <Link href="#about" className="hover:text-[#547C90] transition">
               Why CourSally
             </Link>
-          </li>
-
-          {/*SUBJECTS DROPDOWN*/}
-          <li className="relative" ref={subjectsDropdownRef}>
-            <button
-              onClick={() => setOpenSubjects(!openSubjects)}
-              className="hover:text-[#547C90] transition cursor-pointer"
-            >
-              Subjects ▾
-            </button>
-
-            {/* SUBJECTS MENU */}
-            {openSubjects && (
-              <div className="absolute top-8 left-0 z-50 bg-white shadow-lg border border-[#BACEDA] rounded-xl w-80 p-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    "Arabic",
-                    "Mathematics",
-                    "Science",
-                    "History",
-                    "Geography",
-                    "English",
-                    "Physics",
-                    "Chemistry",
-                    "French",
-                    "Spanish",
-                    "German",
-                    "Islamic",
-                    "Civil Education",
-                    "Civil Architecture",
-                    "Philosophy",
-                    "Electricity",
-                  ].map((item, index) => (
-                    <Link
-                      key={`${item}-${index}`}
-                      href="#"
-                      className="text-sm px-2 py-2 rounded-md text-center hover:bg-[#F1DCDC] hover:text-[#265166] transition"
-                    >
-                      {item}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </li>
 
           {/* LOCATION SECTION */}

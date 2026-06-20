@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { api, getErrorMessage } from "@/lib/api";
+import ReportModal from "@/components/shared/reportModal";
+import Link from "next/link";
 
 interface Student {
   _id: string;
@@ -38,6 +40,7 @@ export default function TeacherStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [reportStudent, setReportStudent] = useState<Student | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -108,7 +111,7 @@ export default function TeacherStudentsPage() {
       <div className="bg-white rounded-2xl border border-[#D4E8F0] shadow-sm overflow-hidden">
         {/* Table header */}
         <div
-          className="grid grid-cols-[auto_1fr_1fr_1fr_1fr] gap-4 px-6 py-3
+          className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3
           bg-[#F7FBFD] border-b border-[#EBF3F8] text-xs font-semibold
           uppercase tracking-wider text-[#547C90]"
         >
@@ -117,6 +120,7 @@ export default function TeacherStudentsPage() {
           <span>Email</span>
           <span>Course</span>
           <span>Status</span>
+          <span>Actions</span>
         </div>
 
         {loading ? (
@@ -144,7 +148,7 @@ export default function TeacherStudentsPage() {
               return (
                 <div
                   key={s._id}
-                  className="grid grid-cols-[auto_1fr_1fr_1fr_1fr] gap-4 px-6 py-4
+                  className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-4
                     items-center hover:bg-[#F7FBFD] transition-colors duration-150"
                 >
                   {/* Avatar */}
@@ -177,12 +181,35 @@ export default function TeacherStudentsPage() {
                   >
                     {s.status ?? "pending"}
                   </span>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/teacher/messages`}
+                      className="text-xs font-semibold text-[#2F556B] hover:underline"
+                    >
+                      Message
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setReportStudent(s)}
+                      className="text-xs font-semibold text-red-600 hover:underline cursor-pointer"
+                    >
+                      Report
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {reportStudent && (
+        <ReportModal
+          reportedUserId={reportStudent._id}
+          reportedName={`${reportStudent.firstName} ${reportStudent.lastName}`}
+          onClose={() => setReportStudent(null)}
+        />
+      )}
     </div>
   );
 }

@@ -3,14 +3,27 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { api, getErrorMessage, getUser } from "@/lib/api";
+import { nextDateForWeekday, normalizeTime } from "@/lib/utils";
+
+interface ScheduleSlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface TeacherCourse {
+  _id: string;
+  title: string;
+  price: number;
+  schedule: ScheduleSlot[];
+  teacher: string | { _id: string };
+}
 
 interface BookSessionModalProps {
   teacher: {
     _id: string;
     firstName: string;
     lastName: string;
-    pricePerHour?: number;
-    availability?: { day: string; startTime: string; endTime: string }[];
   };
   onClose: () => void;
   onBooked?: () => void;
@@ -21,9 +34,10 @@ export default function BookSessionModal({
   onClose,
   onBooked,
 }: BookSessionModalProps) {
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("10:00");
+  const [courses, setCourses] = useState<TeacherCourse[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [courseId, setCourseId] = useState("");
+  const [slotIndex, setSlotIndex] = useState(0);
   const [paymentType, setPaymentType] = useState<"single" | "monthly">(
     "single",
   );
@@ -32,13 +46,30 @@ export default function BookSessionModal({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const selectedCourse = courses.find((c) => c._id === courseId);
+  const slots = selectedCourse?.schedule ?? [];
+  const selectedSlot = slots[slotIndex];
+
   useEffect(() => {
-    const firstSlot = teacher.availability?.[0];
-    if (firstSlot) {
-      setStartTime(firstSlot.startTime || "09:00");
-      setEndTime(firstSlot.endTime || "10:00");
-    }
-  }, [teacher.availability]);
+    api
+      .get<{ success: boolean; data: TeacherCourse[] }>("/courses")
+      .then((res) => {
+        const teacherCourses = res.data.data.filter((c) => {
+          const teacherRef = c.teacher;
+          const id =
+            typeof teacherRef === "string" ? teacherRef : teacherRef?._id;
+          return id === teacher._id;
+        });
+        setCourses(teacherCourses);
+        if (teacherCourses[0]) setCourseId(teacherCourses[0]._id);
+      })
+      .catch(() => setError("Failed to load this teacher's courses."))
+      .finally(() => setLoadingCourses(false));
+  }, [teacher._id]);
+
+  useEffect(() => {
+    setSlotIndex(0);
+  }, [courseId]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -54,8 +85,8 @@ export default function BookSessionModal({
       setError("Please log in to book a session.");
       return;
     }
-    if (!date) {
-      setError("Please select a date.");
+    if (!selectedCourse || !selectedSlot) {
+      setError("Please select a course session posted by the teacher.");
       return;
     }
 
@@ -64,11 +95,12 @@ export default function BookSessionModal({
 
     try {
       await api.post("/booking", {
+        courseId: selectedCourse._id,
         teacherId: teacher._id,
-        date,
-        startTime,
-        endTime,
-        price: teacher.pricePerHour ?? 0,
+        date: nextDateForWeekday(selectedSlot.day),
+        startTime: normalizeTime(selectedSlot.startTime),
+        endTime: normalizeTime(selectedSlot.endTime),
+        price: Number(selectedCourse.price) || 0,
         paymentType,
         paymentMethod,
       });
@@ -92,7 +124,7 @@ export default function BookSessionModal({
       <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 bg-[#2F556B]">
           <div>
-            <h3 className="font-bold text-white text-lg">Book a Session</h3>
+            <h3 className="font-bold text-white text-lg">Book a Course</h3>
             <p className="text-sm text-white/70">
               with {teacher.firstName} {teacher.lastName}
             </p>
@@ -120,83 +152,95 @@ export default function BookSessionModal({
             </div>
           )}
 
-          <div>
-            <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
-              Date
-            </label>
-            <input
-              type="date"
-              value={date}
-              min={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B] focus:ring-2 focus:ring-[#2F556B]/10"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
-                Start
-              </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B]"
-              />
+          {loadingCourses ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-[#547C90]">
+              <Icon icon="mdi:loading" width={18} className="animate-spin" />
+              Loading courses…
             </div>
-            <div>
-              <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
-                End
-              </label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
-              Payment Type
-            </label>
-            <select
-              value={paymentType}
-              onChange={(e) =>
-                setPaymentType(e.target.value as "single" | "monthly")
-              }
-              className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B]"
-            >
-              <option value="single">Single Session</option>
-              <option value="monthly">Monthly</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
-              Payment Method
-            </label>
-            <select
-              value={paymentMethod}
-              onChange={(e) =>
-                setPaymentMethod(e.target.value as "cash" | "card")
-              }
-              className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B]"
-            >
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-            </select>
-          </div>
-
-          {teacher.pricePerHour != null && (
-            <p className="text-sm text-gray-500">
-              Price:{" "}
-              <span className="font-bold text-[#2F556B]">
-                {teacher.pricePerHour.toLocaleString()} DA
-              </span>
+          ) : courses.length === 0 ? (
+            <p className="text-sm text-[#547C90] text-center py-6">
+              This teacher has not posted any courses yet. Check back later or
+              explore other courses.
             </p>
+          ) : (
+            <>
+              <div>
+                <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
+                  Course
+                </label>
+                <select
+                  value={courseId}
+                  onChange={(e) => setCourseId(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B] focus:ring-2 focus:ring-[#2F556B]/10"
+                >
+                  {courses.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.title} — {c.price.toLocaleString()} DA
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block mb-2 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
+                  Posted Session
+                </label>
+                {slots.length === 0 ? (
+                  <p className="text-sm text-[#8AAFC0] bg-[#F6FAFD] rounded-xl px-3 py-2.5">
+                    No sessions posted for this course yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {slots.map((slot, i) => (
+                      <button
+                        key={`${slot.day}-${slot.startTime}-${i}`}
+                        type="button"
+                        onClick={() => setSlotIndex(i)}
+                        className={`w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold border-2 transition ${
+                          slotIndex === i
+                            ? "border-[#2F556B] bg-[#EBF3F8] text-[#1F3745]"
+                            : "border-gray-200 bg-white text-[#547C90] hover:border-[#CBD9E0]"
+                        }`}
+                      >
+                        {slot.day} · {slot.startTime} – {slot.endTime}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
+                  Payment Type
+                </label>
+                <select
+                  value={paymentType}
+                  onChange={(e) =>
+                    setPaymentType(e.target.value as "single" | "monthly")
+                  }
+                  className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B]"
+                >
+                  <option value="single">Single Session</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block mb-1 text-xs font-semibold uppercase tracking-wider text-[#547C90]">
+                  Payment Method
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) =>
+                    setPaymentMethod(e.target.value as "cash" | "card")
+                  }
+                  className="w-full rounded-xl border border-gray-200 bg-[#F9FBFC] px-3 py-2.5 text-sm outline-none focus:border-[#2F556B]"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                </select>
+              </div>
+            </>
           )}
         </div>
 
@@ -211,7 +255,9 @@ export default function BookSessionModal({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={loading || success}
+            disabled={
+              loading || success || loadingCourses || !selectedCourse || !selectedSlot
+            }
             className="flex-1 rounded-xl bg-[#2F556B] py-2.5 text-sm font-semibold text-white hover:bg-[#1F3745] transition disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && (

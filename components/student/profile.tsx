@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
-import { api, getErrorMessage } from "@/lib/api";
+import { api, getErrorMessage, getUser, saveUser } from "@/lib/api";
 import { useStudentTab } from "./Studenttabcontext";
 
 // ─────────────────────────────────────────────
@@ -516,6 +516,9 @@ export default function StudentProfilePage() {
 
   const handleAvatarUploaded = (url: string) => {
     if (profile) setProfile({ ...profile, avatar: url });
+    const stored = getUser();
+    if (stored) saveUser({ ...stored, avatar: url });
+    window.dispatchEvent(new CustomEvent("student-avatar-updated", { detail: url }));
   };
 
   const handleProfileSaved = (updated: StudentProfile) => {

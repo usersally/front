@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { api, getErrorMessage } from "@/lib/api";
 import BookSessionModal from "./bookSessionModal";
+import ReportModal from "@/components/shared/reportModal";
 
 // ─────────────────────────────────────────────
 //  TYPES  (matches teacher.ts model)
@@ -137,6 +138,7 @@ function TeacherCard({ teacher }: { teacher: Teacher }) {
   const subjects = teacher.subject ?? [];
   const levels = teacher.levels ?? [];
   const [showBooking, setShowBooking] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   return (
     <div className="group rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
@@ -242,7 +244,15 @@ function TeacherCard({ teacher }: { teacher: Teacher }) {
             onClick={() => setShowBooking(true)}
             className="flex-1 rounded-xl bg-[#2F556B] py-2 text-center text-sm font-semibold text-white transition hover:bg-[#1F3745]"
           >
-            Book Session
+            Book a Course
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowReport(true)}
+            className="rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+            aria-label="Report teacher"
+          >
+            <Icon icon="mdi:flag-outline" width={18} />
           </button>
         </div>
       </div>
@@ -251,6 +261,14 @@ function TeacherCard({ teacher }: { teacher: Teacher }) {
         <BookSessionModal
           teacher={teacher}
           onClose={() => setShowBooking(false)}
+        />
+      )}
+
+      {showReport && (
+        <ReportModal
+          reportedUserId={teacher._id}
+          reportedName={`${teacher.firstName} ${teacher.lastName}`}
+          onClose={() => setShowReport(false)}
         />
       )}
     </div>

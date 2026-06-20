@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { api, getErrorMessage } from "@/lib/api";
 import BookSessionModal from "./bookSessionModal";
+import ReportModal from "@/components/shared/reportModal";
 
 interface Teacher {
   _id: string;
@@ -57,6 +58,7 @@ function StarRating({ rating, count }: { rating?: number; count?: number }) {
 
 export default function TeacherProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const teacherId = params.id as string;
 
   const [teacher, setTeacher] = useState<Teacher | null>(null);
@@ -66,6 +68,7 @@ export default function TeacherProfilePage() {
   const [enrolling, setEnrolling] = useState(false);
   const [enrollMsg, setEnrollMsg] = useState<string | null>(null);
   const [showBooking, setShowBooking] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -251,7 +254,25 @@ export default function TeacherProfilePage() {
                 className="inline-flex items-center gap-2 rounded-xl border border-[#2F556B] px-5 py-2.5 text-sm font-semibold text-[#2F556B] hover:bg-[#EBF3F8] transition"
               >
                 <Icon icon="mdi:calendar-plus" width={16} />
-                Book Session
+                Book a Course
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(`/student?tab=messages&with=${teacherId}`)
+                }
+                className="inline-flex items-center gap-2 rounded-xl border border-[#D4E8F0] px-5 py-2.5 text-sm font-semibold text-[#547C90] hover:bg-[#EBF3F8] transition"
+              >
+                <Icon icon="mdi:message-outline" width={16} />
+                Message
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowReport(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+              >
+                <Icon icon="mdi:flag-outline" width={16} />
+                Report
               </button>
             </div>
 
@@ -387,6 +408,14 @@ export default function TeacherProfilePage() {
         <BookSessionModal
           teacher={teacher}
           onClose={() => setShowBooking(false)}
+        />
+      )}
+
+      {showReport && teacher && (
+        <ReportModal
+          reportedUserId={teacher._id}
+          reportedName={`${teacher.firstName} ${teacher.lastName}`}
+          onClose={() => setShowReport(false)}
         />
       )}
     </div>

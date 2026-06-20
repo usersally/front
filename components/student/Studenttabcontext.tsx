@@ -8,7 +8,8 @@ export type StudentTab =
   | "courses"
   | "bookings"
   | "profile"
-  | "findTeacher";
+  | "findTeacher"
+  | "messages";
 
 const VALID_TABS: StudentTab[] = [
   "dashboard",
@@ -16,11 +17,12 @@ const VALID_TABS: StudentTab[] = [
   "bookings",
   "profile",
   "findTeacher",
+  "messages",
 ];
 
 interface TabContextValue {
   activeTab: StudentTab;
-  setActiveTab: (tab: StudentTab) => void;
+  setActiveTab: (tab: StudentTab, extra?: { with?: string }) => void;
 }
 
 const TabContext = createContext<TabContextValue>({
@@ -42,11 +44,14 @@ export function StudentTabProvider({
     tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : "dashboard";
 
   const setActiveTab = useCallback(
-    (tab: StudentTab) => {
+    (tab: StudentTab, extra?: { with?: string }) => {
+      const params = new URLSearchParams();
+      params.set("tab", tab);
+      if (extra?.with) params.set("with", extra.with);
       if (pathname === "/student") {
-        router.replace(`/student?tab=${tab}`, { scroll: false });
+        router.replace(`/student?${params.toString()}`, { scroll: false });
       } else {
-        router.push(`/student?tab=${tab}`);
+        router.push(`/student?${params.toString()}`);
       }
     },
     [pathname, router],

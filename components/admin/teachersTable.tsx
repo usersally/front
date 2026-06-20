@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
 import { AdminUser, deleteUser, getErrorMessage, getUsers, updateTeacherCvStatus } from "@/lib/api";
+import { resolveCvSrc, cvUnavailableMessage } from "@/lib/cv";
 
 // ─────────────────────────────────────────────
 //  HELPERS
@@ -32,7 +33,17 @@ export default function AdminTeachersPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const cvUrl = (t: AdminUser) => t.cv ?? t.CV;
+  const cvUrl = (t: AdminUser): string | null => {
+    const raw = t.cv ?? t.CV;
+    return resolveCvSrc(raw);
+  };
+
+  const cvHasRecord = (t: AdminUser): boolean => {
+    const raw = t.cv ?? t.CV;
+    return Boolean(raw && raw !== "pending" && raw.trim() !== "");
+  };
+
+  const [cvViewer, setCvViewer] = useState<string | null>(null);
 
   const statusBadge = (status?: string) => {
     const cfg = {
@@ -216,15 +227,21 @@ export default function AdminTeachersPage() {
                     </td>
                     <td className="px-4 py-3">
                       {cvUrl(t) ? (
-                        <a
-                          href={cvUrl(t)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[#2F556B] dark:text-[#8AAFC0] hover:underline text-xs font-medium"
+                        <button
+                          type="button"
+                          onClick={() => setCvViewer(cvUrl(t))}
+                          className="inline-flex items-center gap-1 text-[#2F556B] dark:text-[#8AAFC0] hover:underline text-xs font-medium cursor-pointer"
                         >
                           <Icon icon="mdi:file-pdf-box" width="16" />
                           View CV
-                        </a>
+                        </button>
+                      ) : cvHasRecord(t) ? (
+                        <span
+                          className="text-xs text-amber-600 dark:text-amber-400"
+                          title={cvUnavailableMessage(t.cv ?? t.CV)}
+                        >
+                          Unavailable
+                        </span>
                       ) : (
                         <span className="text-xs text-[#8AAFC0]">—</span>
                       )}
@@ -337,15 +354,18 @@ export default function AdminTeachersPage() {
                 <dt className="text-[#547C90] dark:text-[#8AAFC0]">CV</dt>
                 <dd className="text-right">
                   {cvUrl(selected) ? (
-                    <a
-                      href={cvUrl(selected)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[#2F556B] dark:text-[#8AAFC0] hover:underline font-medium"
+                    <button
+                      type="button"
+                      onClick={() => setCvViewer(cvUrl(selected))}
+                      className="inline-flex items-center gap-1 text-[#2F556B] dark:text-[#8AAFC0] hover:underline font-medium cursor-pointer"
                     >
                       <Icon icon="mdi:file-pdf-box" width="16" />
                       Open
-                    </a>
+                    </button>
+                  ) : cvHasRecord(selected) ? (
+                    <span className="text-xs text-amber-600 dark:text-amber-400">
+                      {cvUnavailableMessage(selected.cv ?? selected.CV)}
+                    </span>
                   ) : (
                     <span className="text-[#1F3745] dark:text-white font-medium">
                       —
@@ -378,6 +398,50 @@ export default function AdminTeachersPage() {
                 </dd>
               </div>
             </dl>
+          </div>
+        </div>
+      )}
+
+      {/* ── CV viewer modal ── */}
+      {cvViewer && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#16242C] rounded-2xl shadow-xl border border-[#D4E8F0] dark:border-[#23394A] w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#D4E8F0] dark:border-[#23394A]">
+              <h3 className="text-lg font-bold text-[#1F3745] dark:text-white">
+                Teacher CV
+              </h3>
+              <button
+                onClick={() => setCvViewer(null)}
+                className="p-1.5 rounded-lg hover:bg-[#EBF3F8] dark:hover:bg-white/5 cursor-pointer"
+                aria-label="Close CV viewer"
+              >
+                <Icon
+                  icon="mdi:close"
+                  width="20"
+                  className="text-[#547C90] dark:text-[#8AAFC0]"
+                />
+              </button>
+            </div>
+            <div className="flex-1 bg-[#F6FAFD] dark:bg-[#0F1A20]">
+              {cvViewer.startsWith("data:image") ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={cvViewer}
+                  alt="Teacher CV"
+                  className="w-full h-full object-contain"
+                />
+              ) : cvViewer.startsWith("data:") ? (
+                <iframe
+                  src={cvViewer}
+                  title="Teacher CV"
+                  className="w-full h-full border-0"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center p-8 text-center text-sm text-[#547C90] dark:text-[#8AAFC0]">
+                  {cvUnavailableMessage(cvViewer)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -506,29 +506,32 @@ function CourseFormFields({
 // ─────────────────────────────────────────────
 //  HELPER — build FormData payload
 // ─────────────────────────────────────────────
-function buildPayload(
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function buildPayload(
   form: FormState,
   schedule: Schedule[],
   imageFile: File | null,
-): FormData | object {
-  if (imageFile) {
-    const fd = new FormData();
-    fd.append("title", form.title);
-    fd.append("description", form.description);
-    fd.append("price", String(Number(form.price)));
-    fd.append("level", form.level);
-    fd.append("grade", form.grade);
-    fd.append("subject", form.subject);
-    fd.append("schedule", JSON.stringify(schedule));
-    fd.append("image", imageFile);
-    return fd;
-  }
-  return {
+): Promise<object> {
+  const payload: Record<string, unknown> = {
     ...form,
     price: Number(form.price),
     grade: form.grade,
     schedule,
   };
+
+  if (imageFile) {
+    payload.image = await fileToDataUrl(imageFile);
+  }
+
+  return payload;
 }
 
 // ─────────────────────────────────────────────
@@ -574,15 +577,8 @@ function CreateCourseModal({
     try {
       setSaving(true);
       setErr(null);
-      const payload = buildPayload(form, schedule, imageFile);
-      const isFormData = payload instanceof FormData;
-      await api.post(
-        "/courses",
-        payload,
-        isFormData
-          ? { headers: { "Content-Type": "multipart/form-data" } }
-          : {},
-      );
+      const payload = await buildPayload(form, schedule, imageFile);
+      await api.post("/courses", payload);
       onCreated();
       onClose();
     } catch (e) {
@@ -713,15 +709,8 @@ function EditCourseModal({
     try {
       setSaving(true);
       setErr(null);
-      const payload = buildPayload(form, schedule, imageFile);
-      const isFormData = payload instanceof FormData;
-      await api.patch(
-        `/courses/${course._id}`,
-        payload,
-        isFormData
-          ? { headers: { "Content-Type": "multipart/form-data" } }
-          : {},
-      );
+      const payload = await buildPayload(form, schedule, imageFile);
+      await api.patch(`/courses/${course._id}`, payload);
       onSaved();
       onClose();
     } catch (e) {

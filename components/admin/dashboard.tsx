@@ -131,7 +131,9 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ── Stat cards ── */}
-      <div className="mb-8">
+      <div className="mb-8 relative">
+        <div className="absolute -top-6 right-8 w-32 h-32 rounded-full bg-[#7ABFA8]/10 blur-2xl pointer-events-none" />
+        <div className="absolute top-24 left-4 w-24 h-24 rotate-12 rounded-3xl bg-[#F4A07A]/10 pointer-events-none" />
         <StatsCards stats={stats} loading={loading} />
       </div>
 

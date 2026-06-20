@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { nextDateForWeekday, normalizeTime } from "@/lib/utils";
 
 // ─────────────────────────────────────────────
 //  BOOKING MODAL
@@ -17,7 +18,7 @@ function BookingModal({
   onClose: () => void;
   onBooked: () => void;
 }) {
-  const [date, setDate] = useState("");
+  const [slotIndex, setSlotIndex] = useState(0);
   const [paymentType, setPaymentType] = useState<"single" | "monthly">(
     "single",
   );
@@ -25,11 +26,21 @@ function BookingModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const firstSchedule = course.schedule?.[0];
+  const slots = course.schedule?.length ? course.schedule : [];
+  const selectedSlot = slots[slotIndex];
+
+  const teacherId =
+    typeof course.teacher === "string"
+      ? course.teacher
+      : course.teacher?._id;
 
   const handleSubmit = async () => {
-    if (!date) {
-      setError("Please pick a date.");
+    if (!selectedSlot) {
+      setError("This course has no available sessions yet.");
+      return;
+    }
+    if (!teacherId) {
+      setError("Teacher information is missing for this course.");
       return;
     }
     setError("");
@@ -37,18 +48,23 @@ function BookingModal({
     try {
       await api.post("/booking", {
         courseId: course._id,
-        teacherId: course.teacher._id,
-        date,
-        startTime: firstSchedule?.startTime ?? "09:00",
-        endTime: firstSchedule?.endTime ?? "10:00",
-        price: course.price,
+        teacherId,
+        date: nextDateForWeekday(selectedSlot.day),
+        startTime: normalizeTime(selectedSlot.startTime),
+        endTime: normalizeTime(selectedSlot.endTime),
+        price: Number(course.price) || 0,
         paymentType,
         paymentMethod,
       });
       onBooked();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to book. Try again.");
+      const data = err?.response?.data;
+      setError(
+        data?.message ??
+          (typeof data?.error === "string" ? data.error : null) ??
+          "Failed to book. Try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -164,7 +180,7 @@ function BookingModal({
             >
               {course.price.toLocaleString()} DZD
             </span>
-            {firstSchedule && (
+            {selectedSlot && (
               <span
                 style={{
                   background: "rgba(235,243,248,.15)",
@@ -175,8 +191,8 @@ function BookingModal({
                   fontWeight: 700,
                 }}
               >
-                {firstSchedule.day} · {firstSchedule.startTime} –{" "}
-                {firstSchedule.endTime}
+                {selectedSlot.day} · {selectedSlot.startTime} –{" "}
+                {selectedSlot.endTime}
               </span>
             )}
           </div>
@@ -201,26 +217,49 @@ function BookingModal({
                 marginBottom: 8,
               }}
             >
-              Session Date
+              Available Sessions
             </label>
-            <input
-              type="date"
-              value={date}
-              min={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setDate(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: 12,
-                border: "1.5px solid #CBD9E0",
-                fontSize: ".9rem",
-                fontWeight: 600,
-                color: "#1F3745",
-                outline: "none",
-                fontFamily: "inherit",
-                boxSizing: "border-box",
-              }}
-            />
+            {slots.length === 0 ? (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: ".85rem",
+                  color: "#8AACBD",
+                  background: "#F6FAFD",
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                }}
+              >
+                This teacher has not posted any session times for this course
+                yet.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {slots.map((slot, i) => (
+                  <button
+                    key={`${slot.day}-${slot.startTime}-${i}`}
+                    type="button"
+                    onClick={() => setSlotIndex(i)}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      fontWeight: 700,
+                      fontSize: ".88rem",
+                      border: `2px solid ${slotIndex === i ? "#2F556B" : "#E2EDF3"}`,
+                      background: slotIndex === i ? "#EBF3F8" : "#fff",
+                      color: slotIndex === i ? "#1F3745" : "#547C90",
+                      transition: "all .15s",
+                    }}
+                  >
+                    {slot.day} · {slot.startTime} – {slot.endTime}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label
@@ -315,7 +354,7 @@ function BookingModal({
           )}
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !selectedSlot}
             style={{
               padding: "13px 24px",
               borderRadius: 14,
@@ -365,7 +404,7 @@ interface Course {
   subject: string;
   image: string | null;
   isPublished: boolean;
-  teacher: Teacher;
+  teacher: Teacher | string;
   schedule: Schedule[];
   createdAt: string;
 }
