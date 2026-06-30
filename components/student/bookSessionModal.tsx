@@ -68,6 +68,7 @@ export default function BookSessionModal({
   }, [teacher._id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSlotIndex(0);
   }, [courseId]);
 
@@ -256,7 +257,11 @@ export default function BookSessionModal({
             type="button"
             onClick={handleSubmit}
             disabled={
-              loading || success || loadingCourses || !selectedCourse || !selectedSlot
+              loading ||
+              success ||
+              loadingCourses ||
+              !selectedCourse ||
+              !selectedSlot
             }
             className="flex-1 rounded-xl bg-[#2F556B] py-2.5 text-sm font-semibold text-white hover:bg-[#1F3745] transition disabled:opacity-60 flex items-center justify-center gap-2"
           >

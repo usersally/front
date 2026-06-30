@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { nextDateForWeekday, normalizeTime } from "@/lib/utils";
@@ -30,9 +31,7 @@ function BookingModal({
   const selectedSlot = slots[slotIndex];
 
   const teacherId =
-    typeof course.teacher === "string"
-      ? course.teacher
-      : course.teacher?._id;
+    typeof course.teacher === "string" ? course.teacher : course.teacher?._id;
 
   const handleSubmit = async () => {
     if (!selectedSlot) {
@@ -515,8 +514,13 @@ function CourseCard({
   onTeacherClick: (e: React.MouseEvent) => void;
   isBooked?: boolean;
 }) {
-  const teacherName =
-    `${course.teacher?.firstName ?? ""} ${course.teacher?.lastName ?? ""}`.trim();
+  const teacher =
+    typeof course.teacher === "string" ? undefined : course.teacher;
+  const teacherName = teacher
+    ? `${teacher.firstName ?? ""} ${teacher.lastName ?? ""}`.trim()
+    : "Teacher";
+  const teacherAvatar =
+    teacher?.avatarUrl ?? AVATAR_FALLBACK(teacherName || "T");
   const firstSchedule = course.schedule?.[0];
 
   return (
@@ -547,17 +551,15 @@ function CourseCard({
     >
       {/* Image */}
       <div style={{ position: "relative", height: 180, flexShrink: 0 }}>
-        <img
+        <Image
           src={course.image ?? FALLBACK_IMAGE}
           alt={course.title}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-          }}
+          fill
+          sizes="100vw"
+          style={{ objectFit: "cover" }}
+          unoptimized
           onError={(e) => {
-            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+            (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
           }}
         />
         {/* Overlay top-right: save + level */}
@@ -717,22 +719,20 @@ function CourseCard({
         >
           {/* Teacher */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img
-              src={
-                course.teacher?.avatarUrl ?? AVATAR_FALLBACK(teacherName || "T")
-              }
+            <Image
+              src={teacherAvatar}
               alt={teacherName}
               title={`View ${teacherName}'s profile`}
-              onClick={onTeacherClick}
+              width={30}
+              height={30}
               style={{
-                width: 30,
-                height: 30,
                 borderRadius: "50%",
                 objectFit: "cover",
                 border: "2px solid #EBF3F8",
                 cursor: "pointer",
                 transition: "transform .15s, box-shadow .15s",
               }}
+              onClick={onTeacherClick}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLImageElement).style.transform =
                   "scale(1.12)";
@@ -744,8 +744,9 @@ function CourseCard({
                   "scale(1)";
                 (e.currentTarget as HTMLImageElement).style.boxShadow = "none";
               }}
+              unoptimized
               onError={(e) => {
-                (e.target as HTMLImageElement).src = AVATAR_FALLBACK(
+                (e.currentTarget as HTMLImageElement).src = AVATAR_FALLBACK(
                   teacherName || "T",
                 );
               }}
@@ -799,8 +800,10 @@ function CourseModal({
   onBook: () => void;
 }) {
   const [showBooking, setShowBooking] = useState(false);
-  const teacherName =
-    `${course.teacher?.firstName ?? ""} ${course.teacher?.lastName ?? ""}`.trim();
+  const teacher = typeof course.teacher === "string" ? undefined : course.teacher;
+  const teacherName = teacher
+    ? `${teacher.firstName ?? ""} ${teacher.lastName ?? ""}`.trim()
+    : "Teacher";
 
   // Close on backdrop click
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -845,18 +848,18 @@ function CourseModal({
       >
         {/* Hero image */}
         <div style={{ position: "relative", height: 240 }}>
-          <img
+          <Image
             src={course.image ?? FALLBACK_IMAGE}
             alt={course.title}
+            fill
+            sizes="100vw"
             style={{
-              width: "100%",
-              height: "100%",
               objectFit: "cover",
-              display: "block",
               borderRadius: "24px 24px 0 0",
             }}
+            unoptimized
             onError={(e) => {
-              (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
             }}
           />
           <div
@@ -932,23 +935,23 @@ function CourseModal({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <img
+              <Image
                 src={
-                  course.teacher?.avatarUrl ??
+                  teacher?.avatarUrl ??
                   AVATAR_FALLBACK(teacherName || "T")
                 }
                 alt={teacherName}
                 title={`View ${teacherName}'s profile`}
-                onClick={onTeacherClick}
+                width={42}
+                height={42}
                 style={{
-                  width: 42,
-                  height: 42,
                   borderRadius: "50%",
                   objectFit: "cover",
                   border: "2px solid #EBF3F8",
                   cursor: "pointer",
                   transition: "transform .15s, box-shadow .15s",
                 }}
+                onClick={onTeacherClick}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLImageElement).style.transform =
                     "scale(1.1)";
@@ -961,8 +964,9 @@ function CourseModal({
                   (e.currentTarget as HTMLImageElement).style.boxShadow =
                     "none";
                 }}
+                unoptimized
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = AVATAR_FALLBACK(
+                  (e.currentTarget as HTMLImageElement).src = AVATAR_FALLBACK(
                     teacherName || "T",
                   );
                 }}
@@ -1574,7 +1578,14 @@ export default function CoursesPage() {
                     saved={saved.has(course._id)}
                     onSave={(e) => toggleSave(course._id, e)}
                     onClick={() => setSelected(course)}
-                    onTeacherClick={(e) => goToTeacher(course.teacher._id, e)}
+                    onTeacherClick={(e) =>
+                      goToTeacher(
+                        typeof course.teacher === "string"
+                          ? course.teacher
+                          : course.teacher._id,
+                        e,
+                      )
+                    }
                     isBooked={booked.has(course._id)}
                   />
                 ))}
@@ -1591,7 +1602,13 @@ export default function CoursesPage() {
           saved={saved.has(selected._id)}
           onSave={() => toggleSave(selected._id)}
           onClose={() => setSelected(null)}
-          onTeacherClick={() => goToTeacher(selected.teacher._id)}
+          onTeacherClick={() =>
+            goToTeacher(
+              typeof selected.teacher === "string"
+                ? selected.teacher
+                : selected.teacher._id,
+            )
+          }
           isBooked={booked.has(selected._id)}
           onBook={() => setBooked((prev) => new Set(prev).add(selected._id))}
         />
