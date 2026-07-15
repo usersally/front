@@ -1,6 +1,7 @@
 // the place for all calls to node.js and backend
 import axios, { AxiosError } from "axios";
 
+// Use environment variable with fallback
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // ─────────────────────────────────────────────
@@ -9,6 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
 // Attach JWT automatically to every request if present
@@ -23,6 +25,24 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// ✅ Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle 401 Unauthorized - token expired
+    if (error.response?.status === 401) {
+      // Clear token and user if expired
+      clearToken();
+      clearUser();
+      //  redirect to login page
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth/login";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 // ─────────────────────────────────────────────
 //  TYPES
@@ -238,6 +258,7 @@ export async function updateTeacherCvStatus(
 
 const TOKEN_KEY = "token";
 const TOKEN_EXPIRY_KEY = "token_expiry";
+const USER_KEY = "user"; // ✅ Added constant for user key
 const SESSION_DAYS = 7;
 
 /**
@@ -286,20 +307,20 @@ export function clearToken(): void {
 
 export function saveUser(user: AuthUser): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem("user", JSON.stringify(user));
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function getUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
   // If the token is gone (expired/logged-out) don't return a stale user
   if (!getToken()) return null;
-  const user = localStorage.getItem("user");
+  const user = localStorage.getItem(USER_KEY);
   return user ? (JSON.parse(user) as AuthUser) : null;
 }
 
 export function clearUser(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem("user");
+  localStorage.removeItem(USER_KEY);
 }
 
 // ─────────────────────────────────────────────
@@ -309,4 +330,33 @@ export function clearUser(): void {
 export function logout(): void {
   clearToken();
   clearUser();
+  // ✅ Optionally redirect to login
+  if (typeof window !== "undefined") {
+    window.location.href = "/auth/login";
+  }
+}
+
+// ─────────────────────────────────────────────
+//  UTILITY: Check if user is authenticated
+// ─────────────────────────────────────────────
+
+export function isAuthenticated(): boolean {
+  return !!getToken() && !!getUser();
+}
+
+// ─────────────────────────────────────────────
+//  UTILITY: Get user role
+// ─────────────────────────────────────────────
+
+export function getUserRole(): AuthUser["role"] | null {
+  const user = getUser();
+  return user?.role || null;
+}
+
+// ─────────────────────────────────────────────
+//  UTILITY: Check if user has specific role
+// ─────────────────────────────────────────────
+
+export function hasRole(role: AuthUser["role"]): boolean {
+  return getUserRole() === role;
 }
